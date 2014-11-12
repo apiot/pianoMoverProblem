@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QLabel>
 
+
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -12,7 +14,7 @@ int main(int argc, char *argv[])
     statusBar->setText("Waiting");
     SceneProblem *sceneProblem = new SceneProblem(statusBar);
 
-    MainWindow w = MainWindow(statusBar, sceneProblem);
-    w.show();
+    MainWindow *w = new MainWindow(statusBar, sceneProblem, NULL);
+    w->show();
     return app.exec();
 }

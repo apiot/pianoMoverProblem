@@ -1,6 +1,8 @@
 #ifndef SCENEPROBLEM_H
 #define SCENEPROBLEM_H
 
+#include <string>
+
 #include <QGraphicsScene>
 #include <QPoint>
 #include <QGraphicsSceneMouseEvent>

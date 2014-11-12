@@ -11,13 +11,14 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = PianoMoverProblem
 TEMPLATE = app
 
-#C:\Program Files\CGAL-4.5\auxiliary\gmp\lib
 INCLUDEPATH += /user/include/
 LIBS        += -L/usr/include/
 LIBS        += -lCGAL
 LIBS        += -lgmp
 LIBS        += -lmpfr
-QMAKE_CXXFLAGS += -frounding-math -03
+
+QMAKE_CXXFLAGS += -frounding-math
+QMAKE_CXXFLAGS += -std=c++0x
 
 SOURCES += main.cpp\
         mainwindow.cpp \

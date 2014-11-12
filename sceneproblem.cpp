@@ -1,5 +1,7 @@
 #include "sceneproblem.h"
 
+
+
 SceneProblem::SceneProblem(QLabel *st):
     _statusBar(st)
 {
