@@ -11,20 +11,25 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = PianoMoverProblem
 TEMPLATE = app
 
-INCLUDEPATH += /user/include/
-LIBS        += -L/usr/include/
+INCLUDEPATH += /user/local/include
+LIBS        += -L"/usr/local/include"
 LIBS        += -lCGAL
+LIBS        += -lCGAL_Core
 LIBS        += -lgmp
 LIBS        += -lmpfr
 
-QMAKE_CXXFLAGS += -frounding-math
+QMAKE_CXXFLAGS += -frounding-math -O3
+
+
 QMAKE_CXXFLAGS += -std=c++0x
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    sceneproblem.cpp
+    sceneproblem.cpp \
+    arrangement.cpp
 
 HEADERS  += mainwindow.h \
-    sceneproblem.h
+    sceneproblem.h \
+    arrangement.h
 
 FORMS    += mainwindow.ui

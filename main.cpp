@@ -9,12 +9,8 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-
-    QLabel *statusBar = new QLabel();
-    statusBar->setText("Waiting");
-    SceneProblem *sceneProblem = new SceneProblem(statusBar);
-
-    MainWindow *w = new MainWindow(statusBar, sceneProblem, NULL);
+    MainWindow *w = new MainWindow();
     w->show();
+
     return app.exec();
 }
