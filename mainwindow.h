@@ -8,36 +8,35 @@
 
 #include <QMainWindow>
 
-#include <QDesktopWidget>
-#include <QWidget>
-#include <QGroupBox>
-#include <QPushButton>
-#include <QMenu>
-#include <QMenuBar>
 #include <QAction>
-#include <QToolBar>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QTabWidget>
+#include <QDesktopWidget>
+#include <QEvent>
+#include <QFrame>
+#include <QFile>
+#include <QFileDialog>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGraphicsSceneMouseEvent>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QLabel>
-#include <QFrame>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMouseEvent>
+#include <QObject>
 #include <QPointF>
 #include <QPoint>
+#include <QPushButton>
+#include <QRadioButton>
 #include <QRectF>
 #include <QString>
-#include <QMouseEvent>
-#include <QEvent>
-#include <QRadioButton>
-#include <QGroupBox>
-#include <QVBoxLayout>
 #include <QSlider>
-#include <QPainter>
-#include <QObject>
-#include <QFileDialog>
-
+#include <QStringList>
+#include <QTabWidget>
+#include <QTextStream>
+#include <QToolBar>
+#include <QVBoxLayout>
+#include <QWidget>
 
 
 namespace Ui {
@@ -94,10 +93,10 @@ public:
     SceneProblem *sceneProblem;
 
     // arrangement
-    arrangement *frontier;
-    std::list<arrangement> *obstacles;
-    arrangement *manipulator;
-    arrangement *target;
+    arrangement *problem;
+    arrangement *expansion;
+    arrangement *criticalCurves;
+    arrangement *connexes;
 
     // control variables
     bool activeFrontier;

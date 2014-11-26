@@ -1,11 +1,16 @@
 #ifndef ARRANGEMENT_H
 #define ARRANGEMENT_H
 
+#include "toolbox.h"
+
 #include <CGAL/basic.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/CORE_algebraic_number_traits.h>
 #include <CGAL/Arr_conic_traits_2.h>
 #include <CGAL/Arrangement_2.h>
+
+#include <QPoint>
+
 
 
 typedef CGAL::CORE_algebraic_number_traits Nt_traits;
@@ -26,12 +31,18 @@ class arrangement
 {
 public:
     arrangement();
-    void addSegment(int a, int b, int u, int v);
-    void addCircle(int a, int b, int rn, int rd);
-    void addCirclePart(int Ox, int Oy, int k, int l, int u, int v, int rn, int rd);
+    void addSegment(Arrangement_2 *ar, int a, int b, int u, int v);
+    void addCircle(Arrangement_2 *ar, int a, int b, int rn, int rd);
+    void addCirclePart(Arrangement_2 *ar, int Ox, int Oy, int k, int l, int u, int v, int rn, int rd);
     void printArrConsole();
-private:
-    Arrangement_2 arr;
+    void retrieveData(std::vector<QPoint> env, std::vector<std::vector<QPoint> > obs,
+                      QPoint mb,QPoint me,int mr,QPoint tb,QPoint te,int tr);
+public:
+    Arrangement_2 *environment;
+    Arrangement_2 *manipulator;
+    Arrangement_2 *target;
+
+    toolbox tool;
 
 };
 

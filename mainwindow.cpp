@@ -1,8 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -17,10 +15,10 @@ MainWindow::MainWindow(QWidget *parent) :
     /* ************************************************* initialize variables */
 
     // arrangement
-    arrangement *frontier = new arrangement();
-    std::list<arrangement> *obstacles = new std::list<arrangement>();
-    arrangement *manipulator = new arrangement();
-    arrangement *target = new arrangement();
+    problem = new arrangement();
+    expansion = new arrangement();
+    criticalCurves = new arrangement();
+    connexes = new arrangement();
 
     // boolean variables for control panel
     activeFrontier = true;
@@ -86,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // create tab
     QTabWidget *tabLeft = new QTabWidget();
     tabLeft->addTab(viewProblem, tr("Problem"));
-    tabLeft->addTab(viewExpansion, tr("Expansion"));
+    tabLeft->addTab(viewExpansion, tr("Minkowski"));
     tabLeft->addTab(viewCriticalCurves, tr("Critical Curves"));
 
     // left of the screen
@@ -392,9 +390,38 @@ MainWindow::cancel()
 void
 MainWindow::compute()
 {
-    // in a first time we print all data we got
+    /* in a first time we print all data we got */
+    if (sceneProblem->pEnv.size() > 0)
+    {
+        std::cout << "Environment" << std::endl;
+        for (int i = 0; i < (int)sceneProblem->pEnv.size(); ++i)
+            std::cout << sceneProblem->pEnv[i].x() << " " << sceneProblem->pEnv[i].y() << std::endl;
+    }
+    // write obstacles points
+    for (int i = 0; i < (int)sceneProblem->pObs.size() && (int)sceneProblem->pObs[i].size() > 0; ++i)
+    {
+        std::cout << "Obstacle" << std::endl;
+        for (int j = 0; j < (int)sceneProblem->pObs[i].size(); ++j)
+            std::cout << sceneProblem->pObs[i][j].x() << " " << sceneProblem->pObs[i][j].y() << std::endl;
+    }
+    // write manipulator info
+    std::cout << "Manipulator" << std::endl;
+    std::cout << sceneProblem->manip_begin.x() << " " << sceneProblem->manip_begin.y() << " ";
+    std::cout << sceneProblem->manip_end.x() << " " << sceneProblem->manip_end.y() << " ";
+    std::cout << sceneProblem->manip_radius << std::endl;
+    // write target info
+    std::cout << "Object" << std::endl;
+    std::cout << sceneProblem->obj_begin.x() << " " << sceneProblem->obj_begin.y() << " ";
+    std::cout << sceneProblem->obj_end.x() << " " << sceneProblem->obj_end.y() << " ";
+    std::cout << sceneProblem->obj_radius << std::endl;
 
-    // then we compute the problem
+    /* then we compute the problem */
+    problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
+                          sceneProblem->manip_end,sceneProblem->manip_radius,
+                          sceneProblem->obj_begin,sceneProblem->obj_end,
+                          sceneProblem->obj_radius);
+
+
 }
 
 void
@@ -411,17 +438,226 @@ MainWindow::newFile()
 void
 MainWindow::openFile()
 {
+    QStringList fileNames;
+    windowFile->setFileMode(QFileDialog::ExistingFile);
+    windowFile->setNameFilter(tr("Files (*.pmb)"));
+    windowFile->setVisible(true);
+    if (windowFile->exec())
+    {
+        fileNames = windowFile->selectedFiles();
+        std::cout << "Selected File : " << fileNames[0].toStdString() << std::endl;
+        QFile file(fileNames[0]);
+        int choix = 0;
+        int obs = -1;
+        if(file.open(QIODevice::ReadOnly))
+        {
+            // call newFile() function
+            newFile();
+            // and then import data
+            QTextStream in(&file);
+            while(!in.atEnd()) {
+                QString line = in.readLine();
+                if (line.compare("Environment") == 0)
+                    choix = 0;
+                else if (line.compare("Obstacle") == 0)
+                {
+                    choix = 1;
+                    ++obs;
+                    if (obs > 0)
+                        sceneProblem->pObs.push_back(std::vector<QPoint>());
+                }
+                else if (line.compare("Manipulator") == 0)
+                    choix = 2;
+                else if (line.compare("Object") == 0)
+                    choix = 3;
+                else
+                {
+                    QStringList l = line.split(" ");
+                    std::vector<int> p;
+                    for (int i=0; i< l.size(); ++i)
+                        p.push_back(l[i].toInt());
+                    switch (choix)
+                    {
+                        case 0:
+                            sceneProblem->pEnv.push_back(QPoint(p[0],p[1]));
+                            break;
+                        case 1:
+                            sceneProblem->pObs[obs].push_back(QPoint(p[0],p[1]));
+                            break;
+                        case 2:
+                            sceneProblem->manip_begin = QPoint(p[0],p[1]);
+                            sceneProblem->manip_end = QPoint(p[2],p[3]);
+                            sceneProblem->manip_radius = p[4];
+                            break;
+                        case 3:
+                            sceneProblem->obj_begin = QPoint(p[0],p[1]);
+                            sceneProblem->obj_end = QPoint(p[2],p[3]);
+                            sceneProblem->obj_radius = p[4];
+                            break;
+                    }
+                }
+            }
+            if (sceneProblem->pObs.back().size() > 2)
+                sceneProblem->pObs.push_back(std::vector<QPoint>());
+            if (sceneProblem->pEnv.size() > 2)
+                env_close = true;
+            manipb_close = true;
+            manipe_close = true;
+            targetb_close = true;
+            targete_close = true;
+            file.close();
 
+            /* and draw problem */
+            // print environment
+            if (sceneProblem->pEnv.size() > 0)
+            {
+                QPoint qp0 = sceneProblem->pEnv[0];
+                QGraphicsEllipseItem *e0 = new QGraphicsEllipseItem(qp0.x()-1,qp0.y()-1,2,2);
+                e0->setBrush(Qt::black);
+                sceneProblem->pEllipses.push_back(e0);
+                sceneProblem->addItem(e0);
+                for (int i=1; i < (int)sceneProblem->pEnv.size(); ++i)
+                {
+                    QPoint qp = sceneProblem->pEnv[0];
+                    QGraphicsEllipseItem *e = new QGraphicsEllipseItem(qp.x()-1,qp.y()-1,2,2);
+                    e->setBrush(Qt::black);
+                    sceneProblem->pEllipses.push_back(e);
+                    sceneProblem->addItem(e);
+
+                    QPoint p1 = sceneProblem->pEnv[i-1];
+                    QPoint p2 = sceneProblem->pEnv[i];
+                    QGraphicsLineItem *l = new QGraphicsLineItem(p1.x(),p1.y(),p2.x(),p2.y());
+                    sceneProblem->pLines.push_back(l);
+                    sceneProblem->addItem(l);
+                }
+                if (sceneProblem->pEnv.size() > 3)
+                {
+                    QPoint p1 = sceneProblem->pEnv[0];
+                    QPoint p2 = sceneProblem->pEnv.back();
+                    QGraphicsLineItem *l = new QGraphicsLineItem(p1.x(),p1.y(),p2.x(),p2.y());
+                    sceneProblem->pLines.push_back(l);
+                    sceneProblem->addItem(l);
+                }
+            }
+            // print obstacles
+            int first = sceneProblem->pObs.size();
+            for (int k = 0; k < first; ++k)
+            {
+                int snd = sceneProblem->pObs[k].size();
+                if (snd > 1)
+                {
+                    QPoint qp0 = sceneProblem->pObs[k][0];
+                    QGraphicsEllipseItem *e0 = new QGraphicsEllipseItem(qp0.x()-1,qp0.y()-1,2,2);
+                    e0->setBrush(Qt::black);
+                    sceneProblem->oEllipses.push_back(e0);
+                    sceneProblem->addItem(e0);
+                    for (int i=1; i < (int)sceneProblem->pObs[k].size(); ++i)
+                    {
+                        QPoint qp = sceneProblem->pObs[k][0];
+                        QGraphicsEllipseItem *e = new QGraphicsEllipseItem(qp.x()-1,qp.y()-1,2,2);
+                        e->setBrush(Qt::black);
+                        sceneProblem->oEllipses.push_back(e);
+                        sceneProblem->addItem(e);
+
+                        QPoint p1 = sceneProblem->pObs[k][i-1];
+                        QPoint p2 = sceneProblem->pObs[k][i];
+                        QGraphicsLineItem *l = new QGraphicsLineItem(p1.x(),p1.y(),p2.x(),p2.y());
+                        sceneProblem->oLines.push_back(l);
+                        sceneProblem->addItem(l);
+                    }
+                    if (sceneProblem->pObs[k].size() > 3)
+                    {
+                        QPoint p1 = sceneProblem->pObs[k][0];
+                        QPoint p2 = sceneProblem->pObs[k].back();
+                        QGraphicsLineItem *l = new QGraphicsLineItem(p1.x(),p1.y(),p2.x(),p2.y());
+                        sceneProblem->oLines.push_back(l);
+                        sceneProblem->addItem(l);
+                    }
+                }
+            }
+            // print manipulator and target
+            int x = sceneProblem->manip_begin.x();
+            int y = sceneProblem->manip_begin.y();
+            int r = sceneProblem->manip_radius;
+            sceneProblem->mb->setRect(x-(r/2),y-(r/2),r,r);
+            x = sceneProblem->manip_end.x();
+            y = sceneProblem->manip_end.y();
+            sceneProblem->me->setRect(x-(r/2),y-(r/2),r,r);
+            x = sceneProblem->obj_begin.x();
+            y = sceneProblem->obj_begin.y();
+            r = sceneProblem->obj_radius;
+            sceneProblem->ob->setRect(x-(r/2),y-(r/2),r,r);
+            x = sceneProblem->obj_end.x();
+            y = sceneProblem->obj_end.y();
+            sceneProblem->oe->setRect(x-(r/2),y-(r/2),r,r);
+        }
+    }
 }
 
 void
 MainWindow::saveFileData()
 {
+    QStringList fileNames;
+    windowFile->setFileMode(QFileDialog::AnyFile);
     windowFile->setVisible(true);
+    if (windowFile->exec())
+    {
+        fileNames = windowFile->selectedFiles();
+        std::string f = fileNames[0].toStdString();
+        QString file;
+        if (f.size() > 4 && f.substr(f.size()-4,4).compare(".pmb") == 0)
+            file = QString::fromStdString(f);
+        else
+        {
+            file = QString::fromStdString(f+".pmb");
+        }
+        std::cout << "Selected File : " << file.toStdString() << std::endl;
+        // write data in file
+        QFile qfile(file);
+        if ( qfile.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text) )
+        {
+            QTextStream stream(&qfile);
+            // write environment points
+            if (sceneProblem->pEnv.size() > 0)
+            {
+                stream << "Environment" << endl;
+                for (int i = 0; i < (int)sceneProblem->pEnv.size(); ++i)
+                    stream << sceneProblem->pEnv[i].x() << " " << sceneProblem->pEnv[i].y() << endl;
+            }
+            // write obstacles points
+            for (int i = 0; i < (int)sceneProblem->pObs.size() && (int)sceneProblem->pObs[i].size() > 0; ++i)
+            {
+                stream << "Obstacle" << endl;
+                for (int j = 0; j < (int)sceneProblem->pObs[i].size(); ++j)
+                    stream << sceneProblem->pObs[i][j].x() << " " << sceneProblem->pObs[i][j].y() << endl;
+            }
+            // write manipulator info
+            stream << "Manipulator" << endl;
+            stream << sceneProblem->manip_begin.x() << " " << sceneProblem->manip_begin.y() << " ";
+            stream << sceneProblem->manip_end.x() << " " << sceneProblem->manip_end.y() << " ";
+            stream << sceneProblem->manip_radius << endl;
+            // write target info
+            stream << "Object" << endl;
+            stream << sceneProblem->obj_begin.x() << " " << sceneProblem->obj_begin.y() << " ";
+            stream << sceneProblem->obj_end.x() << " " << sceneProblem->obj_end.y() << " ";
+            stream << sceneProblem->obj_radius << endl;
+            // close file
+            qfile.close();
+        }
+    }
 }
 
 void
 MainWindow::saveFileAll()
 {
-
+    QStringList dirNames;
+    windowFile->setFileMode(QFileDialog::Directory);
+    windowFile->setVisible(true);
+    if (windowFile->exec())
+    {
+        dirNames = windowFile->selectedFiles();
+        std::string directory = dirNames[0].toStdString();
+    }
+    // TODO : Later
+    // Save data, and image, and movie if it is done
 }

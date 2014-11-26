@@ -30,8 +30,7 @@ SceneProblem::SceneProblem(MainWindow *mw)
     oe->setBrush(QBrush(QColor(251,113,165),Qt::Dense2Pattern));
     addItem(oe);
 
-    std::vector<QPoint> foo;
-    pObs.push_back(foo);
+    pObs.push_back(std::vector<QPoint>());
 }
 
 void
@@ -154,13 +153,14 @@ SceneProblem::newProblem()
 {
     pEnv.clear();
     pObs.clear();
-    for (int i = 0; i < pEllipses.size(); ++i)
+    pObs.push_back(std::vector<QPoint>());
+    for (int i = 0; i < (int)pEllipses.size(); ++i)
         removeItem(pEllipses[i]);
-    for (int i = 0; i < oEllipses.size(); ++i)
+    for (int i = 0; i < (int)oEllipses.size(); ++i)
         removeItem(oEllipses[i]);
-    for (int i = 0; i < pLines.size(); ++i)
+    for (int i = 0; i < (int)pLines.size(); ++i)
         removeItem(pLines[i]);
-    for (int i = 0; i < oLines.size(); ++i)
+    for (int i = 0; i < (int)oLines.size(); ++i)
         removeItem(oLines[i]);
     pEllipses.clear();
     oEllipses.clear();

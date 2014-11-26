@@ -26,10 +26,12 @@ QMAKE_CXXFLAGS += -std=c++0x
 SOURCES += main.cpp\
         mainwindow.cpp \
     sceneproblem.cpp \
-    arrangement.cpp
+    arrangement.cpp \
+    toolbox.cpp
 
 HEADERS  += mainwindow.h \
     sceneproblem.h \
-    arrangement.h
+    arrangement.h \
+    toolbox.h
 
 FORMS    += mainwindow.ui
