@@ -9,6 +9,8 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QPen>
 
 class MainWindow;
 
@@ -21,22 +23,37 @@ public:
     // methods
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void newProblem();
 
 public:
     MainWindow *mw;
 
+    // for graphics render
+    std::vector<QGraphicsEllipseItem *> pEllipses;
+    std::vector<QGraphicsEllipseItem *> oEllipses;
+
+    std::vector<QGraphicsLineItem *> pLines;
+    std::vector<QGraphicsLineItem *> oLines;
+
+    QGraphicsEllipseItem *mb;
+    QGraphicsEllipseItem *me;
+    QGraphicsEllipseItem *ob;
+    QGraphicsEllipseItem *oe;
+
+    QGraphicsLineItem *tLine;
+    QGraphicsLineItem *oLine;
+
+    QPen *pen;
+
+    // data
     std::vector<QPoint> pEnv;
     std::vector<std::vector<QPoint> > pObs;
 
-    QGraphicsEllipseItem *mb;
     QPoint manip_begin;
-    QGraphicsEllipseItem *me;
     QPoint manip_end;
     int manip_radius;
 
-    QGraphicsEllipseItem *ob;
     QPoint obj_begin;
-    QGraphicsEllipseItem *oe;
     QPoint obj_end;
     int obj_radius;
 };

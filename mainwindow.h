@@ -26,6 +26,7 @@
 #include <QFrame>
 #include <QPointF>
 #include <QPoint>
+#include <QRectF>
 #include <QString>
 #include <QMouseEvent>
 #include <QEvent>
@@ -35,6 +36,7 @@
 #include <QSlider>
 #include <QPainter>
 #include <QObject>
+#include <QFileDialog>
 
 
 
@@ -53,15 +55,10 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    /************************************************** Setters and Modifiers ***********/
-
-
     /**************************************************************** Methods ***********/
 
 
 
-    /*************************************************************** SIGNALS ***********/
-signals:
 
 
     /***************************************************************** SLOTS ***********/
@@ -78,10 +75,16 @@ public slots:
     void closeObs();
     void cancel();
     void compute();
+    void newFile();
+    void openFile();
+    void saveFileData();
+    void saveFileAll();
 
     /***************************************************** Members Variables ***********/
 public:
     Ui::MainWindow *ui;
+
+    QFileDialog *windowFile;
 
     // status bar variable
     QLabel *statusBarLeft;

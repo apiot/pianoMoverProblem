@@ -11,6 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // set Window Title
     setWindowTitle("PianoMoverProblem");
+    windowFile = new QFileDialog(this);
+    windowFile->setVisible(false);
 
     /* ************************************************* initialize variables */
 
@@ -40,17 +42,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* ************************************************************** set Menu */
     QMenu *menuFile = menuBar()->addMenu("&File");
-    QMenu *menuTools = menuBar()->addMenu("&Tools");
-    QMenu *menuOption = menuBar()->addMenu("&Option");
 
     QAction *fileNew = new QAction("&New", this);
     menuFile->addAction(fileNew);
     QAction *fileOpen = new QAction("&Open", this);
     menuFile->addAction(fileOpen);
-    QAction *fileSave = new QAction("&Save", this);
-    menuFile->addAction(fileSave);
-    QAction *fileQuit = new QAction("&Quit", this);
-    menuFile->addAction(fileQuit);
+    QAction *fileSaveData = new QAction("&Save Data", this);
+    menuFile->addAction(fileSaveData);
+    QAction *fileSaveAll = new QAction("&Save All", this);
+    menuFile->addAction(fileSaveAll);
 
     /* ******************************************************** set Status Bar */
     statusBarLeft = new QLabel("Waiting");
@@ -151,6 +151,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* *********************************************** set signals and slots */
 
+    // file menu
+    QObject::connect(fileNew, SIGNAL(triggered()), this, SLOT(newFile()));
+    QObject::connect(fileOpen, SIGNAL(triggered()), this, SLOT(openFile()));
+    QObject::connect(fileSaveData, SIGNAL(triggered()), this, SLOT(saveFileData()));
+    QObject::connect(fileSaveAll, SIGNAL(triggered()), this, SLOT(saveFileAll()));
+
+    // for the problem
     QObject::connect(manipulatorSize, SIGNAL(valueChanged(int)),this,SLOT(updateManipulatorSize(int)));
     QObject::connect(targetSize, SIGNAL(valueChanged(int)),this,SLOT(updateTargetSize(int)));
     QObject::connect(addEnv, SIGNAL(toggled(bool)), this, SLOT(updateEnv(bool)));
@@ -170,7 +177,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// SLOTS
+/*=============================== METHODS ==================================*/
+
+/*================================ SLOTs ===================================*/
+
 void
 MainWindow::updateManipulatorSize(int radius)
 {
@@ -183,6 +193,10 @@ MainWindow::updateManipulatorSize(int radius)
         QString qs = QString::fromStdString("Manipulator Radius : "+std::to_string(radius));
         statusBarRight->setText(qs);
         manipulatorRadius = radius;
+        QPointF c = sceneProblem->mb->rect().center();
+        sceneProblem->mb->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
+        c = sceneProblem->me->rect().center();
+        sceneProblem->me->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
     }
 }
 
@@ -199,6 +213,10 @@ MainWindow::updateTargetSize(int radius)
         QString qs = QString::fromStdString("Object Radius : "+std::to_string(radius));
         statusBarRight->setText(qs);
         targetRadius = radius;
+        QPointF c = sceneProblem->ob->rect().center();
+        sceneProblem->ob->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
+        c = sceneProblem->oe->rect().center();
+        sceneProblem->oe->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
     }
 }
 
@@ -265,8 +283,11 @@ MainWindow::closeEnv()
         int p1y = sceneProblem->pEnv[sceneProblem->pEnv.size()-1].y();
         int p2x = sceneProblem->pEnv[0].x();
         int p2y = sceneProblem->pEnv[0].y();;
-        sceneProblem->addLine(p1x,p1y,p2x,p2y);
+        QGraphicsLineItem *l = new QGraphicsLineItem(p1x,p1y,p2x,p2y);
+        sceneProblem->pLines.push_back(l);
+        sceneProblem->addItem(l);
         env_close = true;
+        sceneProblem->tLine->setVisible(false);
     }
 }
 
@@ -279,9 +300,12 @@ MainWindow::closeObs()
         int p1y = sceneProblem->pObs[sceneProblem->pObs.size()-1][sceneProblem->pObs[sceneProblem->pObs.size()-1].size()-1].y();
         int p2x = sceneProblem->pObs[sceneProblem->pObs.size()-1][0].x();
         int p2y = sceneProblem->pObs[sceneProblem->pObs.size()-1][0].y();;
-        sceneProblem->addLine(p1x,p1y,p2x,p2y);
+        QGraphicsLineItem *l = new QGraphicsLineItem(p1x,p1y,p2x,p2y);
+        sceneProblem->oLines.push_back(l);
+        sceneProblem->addItem(l);
         std::vector<QPoint> foo;
         sceneProblem->pObs.push_back(foo);
+        sceneProblem->oLine->setVisible(false);
     }
 }
 
@@ -289,13 +313,115 @@ MainWindow::closeObs()
 void
 MainWindow::cancel()
 {
+    if (activeFrontier)
+    {
+        if (env_close)
+        {
+            env_close = false;
+            sceneProblem->tLine->setVisible(true);
+            sceneProblem->removeItem(sceneProblem->pLines.back());
+            sceneProblem->pLines.pop_back();
+        }
+        else if (sceneProblem->pEnv.size() >= 2)
+        {
+            sceneProblem->removeItem(sceneProblem->pEllipses.back());
+            sceneProblem->pEllipses.pop_back();
+            sceneProblem->pEnv.pop_back();
+            sceneProblem->removeItem(sceneProblem->pLines.back());
+            sceneProblem->pLines.pop_back();
+        }
+        else if (sceneProblem->pEnv.size() == 1)
+        {
+            sceneProblem->removeItem(sceneProblem->pEllipses.back());
+            sceneProblem->pEllipses.pop_back();
+            sceneProblem->pEnv.pop_back();
+            sceneProblem->tLine->setVisible(false);
+        }
+    }
+    else if (activeObstacles)
+    {
+        int firstDim = sceneProblem->pObs.size();
+        int sndDim = sceneProblem->pObs[firstDim-1].size();
 
+        if (sndDim == 0 && firstDim == 1)
+        {
+            // do nothing
+        }
+        else if (sndDim == 1) // remove point only
+        {
+            sceneProblem->removeItem(sceneProblem->oEllipses.back());
+            sceneProblem->oEllipses.pop_back();
+            sceneProblem->pObs[firstDim-1].pop_back();
+            sceneProblem->oLine->setVisible(false);
+        }
+        else if (sndDim == 0 && firstDim > 1) // del dim and remove line
+        {
+            sceneProblem->removeItem(sceneProblem->oLines.back());
+            sceneProblem->oLines.pop_back();
+
+            sceneProblem->pObs.pop_back();
+            sceneProblem->oLine->setVisible(true);
+        }
+        else if (sndDim > 1) // remove point and line
+        {
+            sceneProblem->removeItem(sceneProblem->oEllipses.back());
+            sceneProblem->oEllipses.pop_back();
+            sceneProblem->pObs[firstDim-1].pop_back();
+            sceneProblem->removeItem(sceneProblem->oLines.back());
+            sceneProblem->oLines.pop_back();
+        }
+    }
+    else if (activeManipulator)
+    {
+        manipb_close = false;
+    }
+    else if (activeEndManipulator)
+    {
+        manipe_close = false;
+    }
+    else if (activeTarget)
+    {
+        targetb_close = false;
+    }
+    else if (activeEndTarget)
+    {
+        targete_close = false;
+    }
 }
-
 
 void
 MainWindow::compute()
 {
+    // in a first time we print all data we got
+
+    // then we compute the problem
+}
+
+void
+MainWindow::newFile()
+{
+    env_close = false;
+    manipb_close = false;
+    manipe_close = false;
+    targetb_close = false;
+    targete_close = false;
+    sceneProblem->newProblem();
+}
+
+void
+MainWindow::openFile()
+{
 
 }
 
+void
+MainWindow::saveFileData()
+{
+    windowFile->setVisible(true);
+}
+
+void
+MainWindow::saveFileAll()
+{
+
+}
