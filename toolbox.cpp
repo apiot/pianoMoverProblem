@@ -22,5 +22,4 @@ toolbox::getRationalFromDouble(int &num, int &den, double var)
     }
     num = (int)(x*pow(10,precision));
     den = pow(10,precision);
-    std::cout << "valeur : "<< num << "/" << den << std::endl;
 }

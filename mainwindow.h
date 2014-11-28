@@ -44,6 +44,7 @@ namespace Ui {
 }
 
 class SceneProblem;
+class arrangement;
 
 class MainWindow : public QMainWindow
 {
@@ -94,9 +95,6 @@ public:
 
     // arrangement
     arrangement *problem;
-    arrangement *expansion;
-    arrangement *criticalCurves;
-    arrangement *connexes;
 
     // control variables
     bool activeFrontier;

@@ -16,9 +16,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // arrangement
     problem = new arrangement();
-    expansion = new arrangement();
-    criticalCurves = new arrangement();
-    connexes = new arrangement();
 
     // boolean variables for control panel
     activeFrontier = true;
@@ -416,11 +413,18 @@ MainWindow::compute()
     std::cout << sceneProblem->obj_radius << std::endl;
 
     /* then we compute the problem */
-    problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
+    if (env_close && manipb_close && manipe_close && targetb_close && targete_close)
+    {
+        statusBarRight->setText(QString::fromStdString("Computing"));
+        problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
                           sceneProblem->manip_end,sceneProblem->manip_radius,
                           sceneProblem->obj_begin,sceneProblem->obj_end,
                           sceneProblem->obj_radius);
-
+    }
+    else
+    {
+        statusBarRight->setText(QString::fromStdString("Probleme must be complete to be computed"));
+    }
 
 }
 
@@ -433,6 +437,8 @@ MainWindow::newFile()
     targetb_close = false;
     targete_close = false;
     sceneProblem->newProblem();
+    statusBarLeft->setText(QString::fromStdString("Waiting"));
+    statusBarRight->setText(QString::fromStdString(""));
 }
 
 void
@@ -507,6 +513,7 @@ MainWindow::openFile()
             targete_close = true;
             file.close();
 
+            statusBarRight->setText(QString::fromStdString("File is loaded"));
             /* and draw problem */
             // print environment
             if (sceneProblem->pEnv.size() > 0)
@@ -590,7 +597,10 @@ MainWindow::openFile()
             x = sceneProblem->obj_end.x();
             y = sceneProblem->obj_end.y();
             sceneProblem->oe->setRect(x-(r/2),y-(r/2),r,r);
+            statusBarRight->setText(QString::fromStdString("Problem is build"));
         }
+        else
+            statusBarRight->setText(QString::fromStdString("An error occured"));
     }
 }
 
@@ -643,7 +653,10 @@ MainWindow::saveFileData()
             stream << sceneProblem->obj_radius << endl;
             // close file
             qfile.close();
+            statusBarRight->setText(QString::fromStdString("Problem is saved"));
         }
+        else
+            statusBarRight->setText(QString::fromStdString("An error occured"));
     }
 }
 
