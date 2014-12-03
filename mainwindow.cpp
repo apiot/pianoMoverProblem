@@ -14,9 +14,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* ************************************************* initialize variables */
 
-    // arrangement
-    problem = new arrangement();
-
     // boolean variables for control panel
     activeFrontier = true;
     activeObstacles = false;
@@ -66,23 +63,28 @@ MainWindow::MainWindow(QWidget *parent) :
     QGraphicsView *viewProblem = new QGraphicsView(sceneProblem);
     viewProblem->setSceneRect(0,0,800,600);
     viewProblem->setMouseTracking(true);
-    //viewProblem->setBackgroundBrush(Qt::white);
 
-    // create scene for the expansion
-    QGraphicsScene *expansion = new QGraphicsScene();
-    QGraphicsView *viewExpansion = new QGraphicsView(expansion);
-    //viewExpansion->setBackgroundBrush(Qt::red);
+    // create scene for the convolution
+    admissibleR = new sceneResults();
+    QGraphicsView *viewAdmissibleR = new QGraphicsView(admissibleR);
+    admissibleO = new sceneResults();
+    QGraphicsView *viewAdmissibleO = new QGraphicsView(admissibleO);
 
     // create scene for the limits
-    QGraphicsScene *criticalCurves = new QGraphicsScene();
+    criticalCurves = new sceneResults();
     QGraphicsView *viewCriticalCurves = new QGraphicsView(criticalCurves);
-    //viewCriticalCurves->setBackgroundBrush(Qt::white);
+
+    // create scene for the limits
+    movie = new sceneResults();
+    QGraphicsView *viewMovie = new QGraphicsView(movie);
 
     // create tab
     QTabWidget *tabLeft = new QTabWidget();
     tabLeft->addTab(viewProblem, tr("Problem"));
-    tabLeft->addTab(viewExpansion, tr("Minkowski"));
+    tabLeft->addTab(viewAdmissibleR, tr("Robot Space"));
+    tabLeft->addTab(viewAdmissibleO, tr("Object Space"));
     tabLeft->addTab(viewCriticalCurves, tr("Critical Curves"));
+    tabLeft->addTab(viewMovie, tr("Movie"));
 
     // left of the screen
     hBoxLayout->addWidget(tabLeft);
@@ -142,7 +144,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // set last parameters
     setCentralWidget(central);
 
-
+    // arrangement
+    problem = new arrangement();
 
     /* *********************************************** set signals and slots */
 
@@ -181,11 +184,11 @@ MainWindow::updateManipulatorSize(int radius)
 {
     if (manipb_close || manipe_close)
     {
-        QString qs = QString::fromStdString("Manipulator Radius : Cannot be changed");
+        QString qs = QString::fromStdString("Manipulator Diameter : Cannot be changed");
         statusBarRight->setText(qs);
     }
     else {
-        QString qs = QString::fromStdString("Manipulator Radius : "+std::to_string(radius));
+        QString qs = QString::fromStdString("Manipulator Diameter : "+std::to_string(radius));
         statusBarRight->setText(qs);
         manipulatorRadius = radius;
         QPointF c = sceneProblem->mb->rect().center();
@@ -200,12 +203,12 @@ MainWindow::updateTargetSize(int radius)
 {
     if (targetb_close || targete_close)
     {
-        QString qs = QString::fromStdString("Object Radius : Cannot be changed");
+        QString qs = QString::fromStdString("Object Diameter : Cannot be changed");
         statusBarRight->setText(qs);
     }
     else
     {
-        QString qs = QString::fromStdString("Object Radius : "+std::to_string(radius));
+        QString qs = QString::fromStdString("Object Diameter : "+std::to_string(radius));
         statusBarRight->setText(qs);
         targetRadius = radius;
         QPointF c = sceneProblem->ob->rect().center();
@@ -387,7 +390,14 @@ MainWindow::cancel()
 void
 MainWindow::compute()
 {
+
+    problem->newProblem();
+    admissibleR->newProblem();
+    admissibleO->newProblem();
+    movie->newProblem();
+
     /* in a first time we print all data we got */
+    /*
     if (sceneProblem->pEnv.size() > 0)
     {
         std::cout << "Environment" << std::endl;
@@ -411,19 +421,42 @@ MainWindow::compute()
     std::cout << sceneProblem->obj_begin.x() << " " << sceneProblem->obj_begin.y() << " ";
     std::cout << sceneProblem->obj_end.x() << " " << sceneProblem->obj_end.y() << " ";
     std::cout << sceneProblem->obj_radius << std::endl;
+    */
 
     /* then we compute the problem */
     if (env_close && manipb_close && manipe_close && targetb_close && targete_close)
     {
-        statusBarRight->setText(QString::fromStdString("Computing"));
+        try
+        {
+        statusBarRight->setText(QString::fromStdString("Computing starts : retrieve datas"));
         problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
                           sceneProblem->manip_end,sceneProblem->manip_radius,
                           sceneProblem->obj_begin,sceneProblem->obj_end,
                           sceneProblem->obj_radius);
+
+        // then compute
+        statusBarRight->setText(QString::fromStdString("Compute Convolution"));
+        problem->compute_admissible_configuration();
+        statusBarRight->setText(QString::fromStdString("Paint Convolution"));
+        admissibleR->paint_env(problem->frontier);
+        admissibleR->paint_obstacles(problem->obstacles);
+        admissibleR->paint_convolution(problem->admissible);
+        admissibleO->paint_env(problem->frontier);
+        admissibleO->paint_obstacles(problem->obstacles);
+        admissibleO->paint_convolution(problem->admissible_o);
+        statusBarRight->setText(QString::fromStdString("Compute Critical Curves"));
+
+        statusBarRight->setText(QString::fromStdString("Computation Done"));
+        }
+        catch(const std::exception exn)
+        {
+            statusBarRight->setText(QString::fromStdString("Computation Failed : Error in problem settings"));
+        }
     }
     else
     {
         statusBarRight->setText(QString::fromStdString("Probleme must be complete to be computed"));
+        // TO IMPROVE : check if obstacles have good arities
     }
 
 }
@@ -437,6 +470,10 @@ MainWindow::newFile()
     targetb_close = false;
     targete_close = false;
     sceneProblem->newProblem();
+    problem->newProblem();
+    admissibleR->newProblem();
+    admissibleO->newProblem();
+    movie->newProblem();
     statusBarLeft->setText(QString::fromStdString("Waiting"));
     statusBarRight->setText(QString::fromStdString(""));
 }
@@ -451,7 +488,7 @@ MainWindow::openFile()
     if (windowFile->exec())
     {
         fileNames = windowFile->selectedFiles();
-        std::cout << "Selected File : " << fileNames[0].toStdString() << std::endl;
+        //std::cout << "Selected File : " << fileNames[0].toStdString() << std::endl;
         QFile file(fileNames[0]);
         int choix = 0;
         int obs = -1;
@@ -597,7 +634,7 @@ MainWindow::openFile()
             x = sceneProblem->obj_end.x();
             y = sceneProblem->obj_end.y();
             sceneProblem->oe->setRect(x-(r/2),y-(r/2),r,r);
-            statusBarRight->setText(QString::fromStdString("Problem is build"));
+            statusBarRight->setText(QString::fromStdString("Problem is built"));
         }
         else
             statusBarRight->setText(QString::fromStdString("An error occured"));
@@ -621,7 +658,7 @@ MainWindow::saveFileData()
         {
             file = QString::fromStdString(f+".pmb");
         }
-        std::cout << "Selected File : " << file.toStdString() << std::endl;
+        //std::cout << "Selected File : " << file.toStdString() << std::endl;
         // write data in file
         QFile qfile(file);
         if ( qfile.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text) )

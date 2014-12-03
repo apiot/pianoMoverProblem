@@ -3,8 +3,8 @@
 arrangement::arrangement()
 {
     environment = new Arrangement_2();
-    manipulator_radius = 0;
-    target_radius = 0;
+    manipulator_diametre = 0;
+    target_diametre = 0;
 }
 
 void
@@ -52,6 +52,7 @@ void
 arrangement::retrieveData(std::vector<QPoint> env, std::vector<std::vector<QPoint> > obs,
                           QPoint mb,QPoint me,int mr,QPoint tb,QPoint te,int tr)
 {
+    /*
     // add frontier
     for (int i=0; i < (int) env.size()-1; ++i)
         addSegment(environment,env[i].x(),env[i].y(),env[i+1].x(),env[i+1].y());
@@ -64,57 +65,123 @@ arrangement::retrieveData(std::vector<QPoint> env, std::vector<std::vector<QPoin
             addSegment(environment,obs[j][i].x(),obs[j][i].y(),obs[j][i+1].x(),obs[j][i+1].y());
         addSegment(environment,obs[j].back().x(),obs[j].back().y(),obs[j][0].x(),obs[j][0].y());
     }
+    */
+    // copy raw data
+    frontier = env;
+    obstacles = obs;
 
     // copy manipulator and target
     manipulator_centre = mb;
     manipulator_centre_end = me;
-    manipulator_radius = mr;
+    manipulator_diametre = mr;
     target_centre = tb;
     target_centre_end = te;
-    target_radius = tr;
-}
-
-Offset_polygon_with_holes_2
-arrangement::offset_of_polygon(Polygon_2 P, int rayon)
-{
-    // Compute the offset polygon.
-   Conic_traits_2 traits;
-   const Rational radius = rayon;
-   Offset_polygon_with_holes_2 offset;
-   CGAL::Timer timer;
-
-   timer.start();
-   offset = offset_polygon_2 (P, radius, traits);
-   timer.stop();
-
-   std::cout << "The offset polygon has " << offset.outer_boundary().size() << " vertices, " << offset.number_of_holes() << " holes." << std::endl;
-   std::cout << "Offset computation took " << timer.time() << " seconds." << std::endl;
-}
-
-Offset_polygon_with_holes_2
-arrangement::compute_offset()
-{
-
+    target_diametre = tr;
 }
 
 void
-arrangement::inset_of_polygon(Polygon_2 P, int rayon)
+arrangement::offset_of_polygon(Polygon_2 P, int diametre, std::vector<Offset_polygon_with_holes_2> &off)
 {
-    // Compute the inner offset of the polygon.
    Conic_traits_2 traits;
-   const Rational radius = rayon;
-   std::list<Offset_polygon_2> inset_polygons;
-   std::list<Offset_polygon_2>::iterator iit;
-   CGAL::Timer timer;
-
-   timer.start();
-   inset_polygon_2 (P, radius, traits, std::back_inserter (inset_polygons));
-   timer.stop();
-
-   std::cout << "The inset comprises " << inset_polygons.size() << " polygon(s)." << std::endl;
-   for (iit = inset_polygons.begin(); iit != inset_polygons.end(); ++iit)
-   {
-       std::cout << " Polygon with " << iit->size() << " vertices." << std::endl;
-   }
-   std::cout << "Inset computation took " << timer.time() << " seconds." << std::endl;
+   const Rational radius = Rational(diametre,2);
+   Offset_polygon_with_holes_2 offset;
+   offset = offset_polygon_2 (P, radius, traits);
+   off.push_back(offset);
 }
+
+void
+arrangement::inset_of_polygon(Polygon_2 P, int diametre, std::list<Offset_polygon_2> &in)
+{
+   Conic_traits_2 traits;
+   const Rational radius = Rational(diametre,2);
+   inset_polygon_2 (P, radius, traits, std::back_inserter (in));
+}
+
+void
+arrangement::admissible_configuration(Op2_it pgn, std::vector<Offset_polygon_with_holes_2> &off,Pwh_list_2 &adm)
+{
+    Offset_polygon_with_holes_2 poly(*pgn);
+    std::vector<Offset_polygon_with_holes_2> polys;
+    polys.push_back(poly);
+
+    for (int i =0; i< (int) polys.size(); ++i)
+    if (polys[i].outer_boundary().orientation() == -1)
+            polys[i].outer_boundary().reverse_orientation();
+
+    for (int i =0; i< (int)polys.size(); ++i)
+    {
+        int before;
+        bool flag = false;
+        for (int k = 0; k < (int)off.size(); ++k)
+        {
+            if (off[k].outer_boundary().orientation() == -1)
+                off[k].outer_boundary().reverse_orientation();
+
+            if (CGAL::do_intersect(polys[i], off[k]))
+            {
+                flag = true;
+                before = (int) adm.size();
+                CGAL::difference(polys[i], off[k],std::back_inserter(adm));
+                polys.pop_back();
+                int cpt_tmp = (int)adm.size();
+                for (int j = before; j < cpt_tmp; ++j)
+                {
+                    polys.push_back(adm.back());
+                    adm.pop_back();
+                }
+            }
+        }
+        if (flag)
+            --i;
+    }
+    for (int k = 0; k < (int)polys.size(); ++k)
+        adm.push_back(polys[k]);
+}
+
+void
+arrangement::compute_admissible_configuration()
+{
+    // transform environment into polygons
+    std::list<Rat_point_2> pts;
+    for (int i=0;i<(int)frontier.size();++i)
+        pts.push_back(Rat_point_2(frontier[i].x(), frontier[i].y()));
+    env.insert(env.vertices_circulator(), pts.begin(), pts.end());
+
+    // compute inset
+    inset_of_polygon(env, manipulator_diametre, inset);
+    inset_of_polygon(env, target_diametre, inset_o);
+
+    // transform and compute offset of obstacles
+    std::vector<std::list<Rat_point_2> > pts2;
+    pts2.resize((int)obstacles.size());
+    obs.resize((int)obstacles.size());
+    for(int k = 0; k < (int)obstacles.size()-1; ++k)
+    {
+        for (int i=0;i<(int)obstacles[k].size();++i)
+            pts2[k].push_back(Rat_point_2(obstacles[k][i].x(),obstacles[k][i].y()));
+        obs[k].insert(obs[k].vertices_circulator(), pts2[k].begin(), pts2[k].end());
+        offset_of_polygon(obs[k],manipulator_diametre, offsets);
+        offset_of_polygon(obs[k],target_diametre, offsets_o);
+    }
+
+    // compute admissible configuration
+    for (Op2_it pgn=inset.begin(); pgn != inset.end(); ++pgn)
+        admissible_configuration(pgn, offsets, admissible);
+    for (Op2_it pgn=inset_o.begin(); pgn != inset_o.end(); ++pgn)
+        admissible_configuration(pgn, offsets_o, admissible_o);
+}
+
+void
+arrangement::newProblem()
+{
+    // reset arrangement data
+    environment = new Arrangement_2();
+    // reset polygon data
+    env = Polygon_2();
+    obs.clear();
+    inset.clear();
+    offsets.clear();
+    admissible.clear();
+
+}
+

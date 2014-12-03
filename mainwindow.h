@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "sceneproblem.h"
+#include "sceneresults.h"
 #include "arrangement.h"
 
 #include <string>
@@ -92,6 +93,10 @@ public:
 
     // graphics
     SceneProblem *sceneProblem;
+    sceneResults *admissibleR;
+    sceneResults *admissibleO;
+    sceneResults *criticalCurves;
+    sceneResults *movie;
 
     // arrangement
     arrangement *problem;

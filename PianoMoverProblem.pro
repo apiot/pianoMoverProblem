@@ -27,11 +27,13 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     sceneproblem.cpp \
     arrangement.cpp \
-    toolbox.cpp
+    toolbox.cpp \
+    sceneresults.cpp
 
 HEADERS  += mainwindow.h \
     sceneproblem.h \
     arrangement.h \
-    toolbox.h
+    toolbox.h \
+    sceneresults.h
 
 FORMS    += mainwindow.ui

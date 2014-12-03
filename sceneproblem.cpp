@@ -81,7 +81,7 @@ void
 SceneProblem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     QPoint qp = event->scenePos().toPoint();
-    std::cout << "Clicked Point : " << qp.x() << " " << qp.y() << std::endl;
+    //std::cout << "Clicked Point : " << qp.x() << " " << qp.y() << std::endl;
 
     if (!mw->env_close && mw->activeFrontier)
     {
