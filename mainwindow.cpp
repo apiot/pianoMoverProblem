@@ -48,7 +48,12 @@ MainWindow::MainWindow(QWidget *parent) :
     statusBarLeft = new QLabel("Waiting");
     statusBar()->addWidget(statusBarLeft);
     statusBarRight = new QLabel();
+    statusBarRight->setFixedWidth(350);
     statusBar()->addWidget(statusBarRight);
+    progressBar = new QProgressBar();
+    progressBar->setRange(0,100);
+    statusBar()->addWidget(progressBar);
+    progressBar->setVisible(false);
 
     /* **************************************************** left of the screen */
 
@@ -101,13 +106,13 @@ MainWindow::MainWindow(QWidget *parent) :
     QPushButton *terminateObs = new QPushButton("Close Polygon");
     addManipulator = new QRadioButton("Manipulator");
     endManipulator = new QRadioButton("End");
-    QSlider *manipulatorSize = new QSlider(Qt::Horizontal);
+    manipulatorSize = new QSlider(Qt::Horizontal);
     manipulatorSize->setRange(10,200);
     manipulatorSize->setSliderPosition(manipulatorRadius);
     manipulatorSize->setMaximumWidth(180);
     addTarget = new QRadioButton("Object");
     endTarget = new QRadioButton("End");
-    QSlider *targetSize = new QSlider(Qt::Horizontal);
+    targetSize = new QSlider(Qt::Horizontal);
     targetSize->setRange(10,200);
     targetSize->setSliderPosition(targetRadius);
     targetSize->setMaximumWidth(180);
@@ -182,12 +187,14 @@ MainWindow::~MainWindow()
 void
 MainWindow::updateManipulatorSize(int radius)
 {
+    /*
     if (manipb_close || manipe_close)
     {
         QString qs = QString::fromStdString("Manipulator Diameter : Cannot be changed");
         statusBarRight->setText(qs);
     }
     else {
+    */
         QString qs = QString::fromStdString("Manipulator Diameter : "+std::to_string(radius));
         statusBarRight->setText(qs);
         manipulatorRadius = radius;
@@ -195,12 +202,13 @@ MainWindow::updateManipulatorSize(int radius)
         sceneProblem->mb->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
         c = sceneProblem->me->rect().center();
         sceneProblem->me->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
-    }
+    //}
 }
 
 void
 MainWindow::updateTargetSize(int radius)
 {
+    /*
     if (targetb_close || targete_close)
     {
         QString qs = QString::fromStdString("Object Diameter : Cannot be changed");
@@ -208,6 +216,7 @@ MainWindow::updateTargetSize(int radius)
     }
     else
     {
+    */
         QString qs = QString::fromStdString("Object Diameter : "+std::to_string(radius));
         statusBarRight->setText(qs);
         targetRadius = radius;
@@ -215,7 +224,7 @@ MainWindow::updateTargetSize(int radius)
         sceneProblem->ob->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
         c = sceneProblem->oe->rect().center();
         sceneProblem->oe->setRect(c.x()-(radius/2),c.y()-(radius/2),radius,radius);
-    }
+    //}
 }
 
 void
@@ -426,32 +435,66 @@ MainWindow::compute()
     /* then we compute the problem */
     if (env_close && manipb_close && manipe_close && targetb_close && targete_close)
     {
-        try
-        {
+        //try
+        //{
+        progressBar->setVisible(true);
+        progressBar->setValue(0);
+
+
         statusBarRight->setText(QString::fromStdString("Computing starts : retrieve datas"));
+
+
         problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
                           sceneProblem->manip_end,sceneProblem->manip_radius,
                           sceneProblem->obj_begin,sceneProblem->obj_end,
                           sceneProblem->obj_radius);
 
-        // then compute
+        progressBar->setValue(10);
         statusBarRight->setText(QString::fromStdString("Compute Convolution"));
+
+
         problem->compute_admissible_configuration();
+
         statusBarRight->setText(QString::fromStdString("Paint Convolution"));
+
+
         admissibleR->paint_env(problem->frontier);
         admissibleR->paint_obstacles(problem->obstacles);
         admissibleR->paint_convolution(problem->admissible);
         admissibleO->paint_env(problem->frontier);
         admissibleO->paint_obstacles(problem->obstacles);
         admissibleO->paint_convolution(problem->admissible_o);
+        problem->compute_convolutionLabels();
+
+        progressBar->setValue(20);
+
         statusBarRight->setText(QString::fromStdString("Compute Critical Curves"));
 
+
+        problem->compute_criticalCurves_type_I();
+        problem->compute_criticalCurves_type_II();
+
+        statusBarRight->setText(QString::fromStdString("Paint Critical Curves"));
+
+
+        criticalCurves->paint_env(problem->frontier);
+        criticalCurves->paint_obstacles(problem->obstacles);
+        criticalCurves->paint_cc_convolution(problem->convolutions);
+        criticalCurves->paint_ccI(problem->ccI);
+        criticalCurves->paint_ccII(problem->ccII);
+
+        progressBar->setValue(80);
         statusBarRight->setText(QString::fromStdString("Computation Done"));
+        progressBar->setVisible(false);
+
+
+        /*
         }
         catch(const std::exception exn)
         {
             statusBarRight->setText(QString::fromStdString("Computation Failed : Error in problem settings"));
         }
+        */
     }
     else
     {
@@ -469,10 +512,11 @@ MainWindow::newFile()
     manipe_close = false;
     targetb_close = false;
     targete_close = false;
-    sceneProblem->newProblem();
     problem->newProblem();
+    sceneProblem->newProblem();
     admissibleR->newProblem();
     admissibleO->newProblem();
+    criticalCurves->newProblem();
     movie->newProblem();
     statusBarLeft->setText(QString::fromStdString("Waiting"));
     statusBarRight->setText(QString::fromStdString(""));
@@ -531,17 +575,23 @@ MainWindow::openFile()
                             sceneProblem->manip_begin = QPoint(p[0],p[1]);
                             sceneProblem->manip_end = QPoint(p[2],p[3]);
                             sceneProblem->manip_radius = p[4];
+                            manipulatorSize->setSliderPosition(p[4]);
                             break;
                         case 3:
                             sceneProblem->obj_begin = QPoint(p[0],p[1]);
                             sceneProblem->obj_end = QPoint(p[2],p[3]);
                             sceneProblem->obj_radius = p[4];
+                            targetSize->setSliderPosition(p[4]);
                             break;
                     }
                 }
             }
+            bool flag_obs = false;
             if (sceneProblem->pObs.back().size() > 2)
+            {
                 sceneProblem->pObs.push_back(std::vector<QPoint>());
+                flag_obs = true;
+            }
             if (sceneProblem->pEnv.size() > 2)
                 env_close = true;
             manipb_close = true;
@@ -585,6 +635,7 @@ MainWindow::openFile()
             }
             // print obstacles
             int first = sceneProblem->pObs.size();
+            if (flag_obs) --first;
             for (int k = 0; k < first; ++k)
             {
                 int snd = sceneProblem->pObs[k].size();
@@ -609,7 +660,7 @@ MainWindow::openFile()
                         sceneProblem->oLines.push_back(l);
                         sceneProblem->addItem(l);
                     }
-                    if (sceneProblem->pObs[k].size() > 3)
+                    if (sceneProblem->pObs[k].size() >= 3)
                     {
                         QPoint p1 = sceneProblem->pObs[k][0];
                         QPoint p2 = sceneProblem->pObs[k].back();

@@ -9,28 +9,33 @@ class arrangement
 {
 public:
     arrangement();
-    void addSegment(Arrangement_2 *ar, int a, int b, int u, int v);
-    void addCircle(Arrangement_2 *ar, int a, int b, int rn, int rd);
-    void addCirclePart(Arrangement_2 *ar, int Ox, int Oy, int k, int l, int u, int v, int rn, int rd);
-    void printArrConsole();
+    void printArrConsole(Arrangement_2 *a);
     void retrieveData(std::vector<QPoint> env, std::vector<std::vector<QPoint> > obs,
                       QPoint mb,QPoint me,int mr,QPoint tb,QPoint te,int tr);
     void offset_of_polygon(Polygon_2 P, int diametre, std::vector<Offset_polygon_with_holes_2> &off);
     void inset_of_polygon(Polygon_2 P, int diametre, std::list<Offset_polygon_2> &in);
     void admissible_configuration(Op2_it pgn, std::vector<Offset_polygon_with_holes_2> &off, Pwh_list_2 &adm);
     void compute_admissible_configuration();
+    std::string getLabel(std::vector<std::string> &labels, X_monotone_curve_2 &curve, int &cpt, double &r);
+    void compute_convolutionLabels();
+    void compute_criticalCurves_type_I();
+    void compute_criticalCurves_type_II();
     void newProblem();
 
 public:
     // computed arrangement data
-    Arrangement_2 *environment;
+    std::vector<Arrangement_2> convolutions;
+    std::vector<Arrangement_2> ccI;
+    std::vector<Arrangement_2> ccII;
 
     // compute polygon data
     Polygon_2 env;
     std::vector<Polygon_2> obs;
+
     std::list<Offset_polygon_2> inset;
     std::vector<Offset_polygon_with_holes_2> offsets;
     Pwh_list_2 admissible;
+
     std::list<Offset_polygon_2> inset_o;
     std::vector<Offset_polygon_with_holes_2> offsets_o;
     Pwh_list_2 admissible_o;
@@ -40,12 +45,14 @@ public:
     // raw data
     std::vector<QPoint> frontier;
     std::vector<std::vector<QPoint> > obstacles;
+    std::vector<QPoint> env_points;
     QPoint manipulator_centre;
     QPoint manipulator_centre_end;
     int manipulator_diametre;
     QPoint target_centre;
     QPoint target_centre_end;
     int target_diametre;
+    double r1r2;
 };
 
 #endif // ARRANGEMENT_H

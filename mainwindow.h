@@ -27,6 +27,7 @@
 #include <QObject>
 #include <QPointF>
 #include <QPoint>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QRadioButton>
 #include <QRectF>
@@ -90,6 +91,8 @@ public:
     // status bar variable
     QLabel *statusBarLeft;
     QLabel *statusBarRight;
+    QProgressBar *progressBar;
+
 
     // graphics
     SceneProblem *sceneProblem;
@@ -118,6 +121,10 @@ public:
     // manipulator and target size
     int manipulatorRadius;
     int targetRadius;
+
+    // sliders
+    QSlider *manipulatorSize;
+    QSlider *targetSize;
 
     // radio button
     QRadioButton *addEnv;

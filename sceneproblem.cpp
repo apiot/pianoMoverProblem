@@ -18,14 +18,18 @@ SceneProblem::SceneProblem(MainWindow *mw)
     mb = new QGraphicsEllipseItem(-10000,-10000,r,r);
     mb->setBrush(QBrush(QColor(98,163,244)));
     addItem(mb);
-    me = new QGraphicsEllipseItem(-10000,-10000,r,r);
-    me->setBrush(QBrush(QColor(130,184,251), Qt::Dense2Pattern));
-    addItem(me);
 
     r = mw->targetRadius;
     ob = new QGraphicsEllipseItem(-10000,-10000,r,r);
     ob->setBrush(QBrush(QColor(250,68,136)));
     addItem(ob);
+
+    r = mw->manipulatorRadius;
+    me = new QGraphicsEllipseItem(-10000,-10000,r,r);
+    me->setBrush(QBrush(QColor(130,184,251), Qt::Dense2Pattern));
+    addItem(me);
+
+    r = mw->targetRadius;
     oe = new QGraphicsEllipseItem(-10000,-10000,r,r);
     oe->setBrush(QBrush(QColor(251,113,165),Qt::Dense2Pattern));
     addItem(oe);

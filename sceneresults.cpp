@@ -69,12 +69,80 @@ sceneResults::paint_convolution(Pwh_list_2 admis)
         addPolygon(*p, QPen(Qt::black), QBrush(QColor(209,242,234)));
         */
         for (X_curve_2_it curve = admis[i].outer_boundary().curves_begin(); curve != admis[i].outer_boundary().curves_end(); ++curve)
+        {
+
             paint_curves(curve);
+        }
         if (admis[i].has_holes())
             for (Op2_it pit = admis[i].holes_begin(); pit != admis[i].holes_end(); ++pit)
                 for (X_curve_2_it curve = pit->curves_begin(); curve != pit->curves_end(); ++curve)
                     paint_curves(curve);
 
+    }
+}
+
+void
+sceneResults::paint_cc_convolution(std::vector<Arrangement_2> arr)
+{
+    for (int i = 0; i < (int) arr.size(); ++i)
+        paint_arrangement(arr[i], Qt::red, true, QColor(184,7,7));
+}
+
+void
+sceneResults::paint_ccI(std::vector<Arrangement_2> ccI)
+{
+    for (int i = 0; i < (int) ccI.size(); ++i)
+        paint_arrangement(ccI[i], QColor(12,155,76), false, QColor(0,0,0));
+}
+
+void
+sceneResults::paint_ccII(std::vector<Arrangement_2> ccII)
+{
+    for (int i = 0; i < (int) ccII.size(); ++i)
+        paint_arrangement(ccII[i], QColor(70,87,249), false, QColor(0,0,0));
+}
+
+void
+sceneResults::paint_arrangement(Arrangement_2 arr, QColor colorPen, bool displayText, QColor colorText)
+{
+    QPen pen(colorPen);
+
+    for (Arrangement_2::Edge_iterator edge = arr.edges_begin(); edge != arr.edges_end(); ++edge)
+    {
+        int n = 25;
+        approximated_point_2* points = new approximated_point_2[n + 1];
+        edge->curve().polyline_approximation(n, points);
+        if (CGAL::COLLINEAR == edge->curve().orientation())
+        {
+            // Draw a segment.
+            QPointF p1 = QPointF(points[0].first, points[0].second);
+            QPointF p2 = QPointF(points[1].first, points[1].second);
+            addLine(p1.x(),p1.y(),p2.x(),p2.y(), pen);
+            if (displayText)
+            {
+                QGraphicsSimpleTextItem *t = new QGraphicsSimpleTextItem(QString::fromStdString(edge->data()));
+                t->setBrush(colorText);
+                t->setPos((points[0].first+points[1].first)/2, (points[0].second+points[1].second)/2);
+                addItem(t);
+            }
+        }
+        else
+        {
+            // Draw an approximation of the conic arc.
+            for (int i = 1; i < n + 1; ++i)
+            {
+                QPointF p1 = QPointF(points[i-1].first, points[i-1].second);
+                QPointF p2 = QPointF(points[i].first, points[i].second);
+                addLine(p1.x(),p1.y(),p2.x(),p2.y(), pen);
+            }
+            if (displayText)
+            {
+                QGraphicsSimpleTextItem *t = new QGraphicsSimpleTextItem(QString::fromStdString(edge->data()));
+                t->setBrush(colorText);
+                t->setPos(points[(n+1)/2].first, points[(n+1)/2].second);
+                addItem(t);
+            }
+        }
     }
 }
 
