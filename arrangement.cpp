@@ -308,9 +308,9 @@ arrangement::keep_arc(Arrangement_2 &arr, Arrangement_2::Edge_iterator &e, Arran
             Arrangement_2::Vertex_handle v = insert_point(copy2, p, walk_pl);
             try
             {
-            if (v->face()->data() == 1)
-                insert(arr, e->curve());
-            copy2.remove_isolated_vertex(v);
+                if (v->face()->data() == 1)
+                    insert(arr, e->curve());
+                copy2.remove_isolated_vertex(v);
             }
             catch (const std::exception exn) {}
         }
@@ -633,11 +633,6 @@ arrangement::compute_GRAPScell()
 void
 arrangement::newProblem()
 {
-    // reset arrangement data
-    convolutions.clear();
-    convolutions_o.clear();
-    ccI.clear();
-    ccII.clear();
     // reset polygon data
     env = Polygon_2();
     obs.clear();
@@ -648,6 +643,14 @@ arrangement::newProblem()
     offsets_o.clear();
     admissible_o.clear();
     env_points.clear();
-
+    // reset arrangement data
+    convolutions.clear();
+    convolutions_o.clear();
+    ccI.clear();
+    ccII.clear();
+    // reset for graphs
+    nonCriticalRegions.clear();
+    point_in_faces.clear();
+    neighbours.clear();
 }
 
