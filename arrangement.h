@@ -18,15 +18,30 @@ public:
     void compute_admissible_configuration();
     std::string getLabel(std::vector<std::string> &labels, X_monotone_curve_2 &curve, int &cpt, double &r);
     void compute_convolutionLabels();
+    void keep_arc(Arrangement_2 &arr, Arrangement_2::Edge_iterator &e, Arrangement_2 &copy2, Walk_pl &walk_pl);
     void compute_criticalCurves_type_I();
     void compute_criticalCurves_type_II();
+    std::vector<double> getPointMiddle(Arrangement_2::Ccb_halfedge_circulator &edge);
+    void compute_pointInCells();
+    void print_neighbours();
+    void compute_neighbours();
+    void compute_ACScell();
+    void compute_GRAPScell();
     void newProblem();
 
 public:
-    // computed arrangement data
-    std::vector<Arrangement_2> convolutions;
-    std::vector<Arrangement_2> ccI;
-    std::vector<Arrangement_2> ccII;
+
+    // raw data
+    std::vector<QPoint> frontier;
+    std::vector<std::vector<QPoint> > obstacles;
+    std::vector<QPoint> env_points;
+    QPoint manipulator_centre;
+    QPoint manipulator_centre_end;
+    int manipulator_diametre;
+    QPoint target_centre;
+    QPoint target_centre_end;
+    int target_diametre;
+    double r1r2;
 
     // compute polygon data
     Polygon_2 env;
@@ -40,19 +55,16 @@ public:
     std::vector<Offset_polygon_with_holes_2> offsets_o;
     Pwh_list_2 admissible_o;
 
+    // computed arrangement data
+    std::vector<Arrangement_2> convolutions; // robot
+    std::vector<Arrangement_2> convolutions_o;
+    std::vector<Arrangement_2> ccI;
+    std::vector<Arrangement_2> ccII;
 
-
-    // raw data
-    std::vector<QPoint> frontier;
-    std::vector<std::vector<QPoint> > obstacles;
-    std::vector<QPoint> env_points;
-    QPoint manipulator_centre;
-    QPoint manipulator_centre_end;
-    int manipulator_diametre;
-    QPoint target_centre;
-    QPoint target_centre_end;
-    int target_diametre;
-    double r1r2;
+   // for Graphs
+    Arrangement_2 nonCriticalRegions;
+    std::vector<std::vector<double> > point_in_faces;
+    std::vector<std::vector<int> > neighbours;
 };
 
 #endif // ARRANGEMENT_H

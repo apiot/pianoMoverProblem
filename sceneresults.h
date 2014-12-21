@@ -1,7 +1,6 @@
 #ifndef SCENERESULTS_H
 #define SCENERESULTS_H
 
-
 #include <QBrush>
 #include <QColor>
 #include <QGraphicsSimpleTextItem>
@@ -20,6 +19,8 @@
 //#include <CGAL/Arrangement_on_surface_with_history_2.h>
 //#include <CGAL/Arrangement_with_history_2.h>
 #include <CGAL/Arr_extended_dcel.h>
+#include <CGAL/Arr_walk_along_line_point_location.h>
+
 
 #include <CGAL/offset_polygon_2.h>
 #include <CGAL/Gps_traits_2.h>
@@ -30,7 +31,8 @@
 #include <CGAL/General_polygon_2.h>
 
 
-// for conics
+                                     /* basics */
+
 typedef CGAL::CORE_algebraic_number_traits                           Nt_traits;
 typedef Nt_traits::Rational                                          Rational;
 typedef Nt_traits::Algebraic                                         Algebraic;
@@ -47,42 +49,43 @@ typedef CGAL::Arr_conic_traits_2<Rat_kernel, Alg_kernel, Nt_traits>  Conic_trait
 //typedef Conic_traits_2::Curve_2                                      Conic_arc_2;
 
 typedef Alg_kernel::FT                                               Algebraic_ft;
-typedef std::list<CGAL::Object>                                      Objects;
-typedef Objects::iterator                                            Object_iterator;
 
 
                                    /* for arrangement */
 
-
-typedef CGAL::Arr_extended_dcel<Conic_traits_2, std::string, std::string, std::string>
-                                                                     Dcel;
+                                                 // vertex, edge, face
+typedef CGAL::Arr_extended_dcel<Conic_traits_2, std::string, std::string, int> Dcel;
 typedef CGAL::Arrangement_2<Conic_traits_2, Dcel>                    Arrangement_2;
 typedef Arrangement_2::Face_handle                                   Face_handle;
+typedef CGAL::Arr_naive_point_location<Arrangement_2>                Naive_pl;
+typedef CGAL::Arr_walk_along_line_point_location<Arrangement_2>      Walk_pl;
 
                                       /* for polygon */
 typedef CGAL::Polygon_2<Rat_kernel>                                  Polygon_2;
 typedef CGAL::Gps_traits_2<Conic_traits_2>                           Gps_traits_2;
 typedef Gps_traits_2::Polygon_2                                      Offset_polygon_2;
 typedef Gps_traits_2::Polygon_with_holes_2                           Offset_polygon_with_holes_2;
-
 typedef Polygon_2::Edge_const_iterator                               EdgeIterator;
 typedef Polygon_2::Vertex_iterator                                   VertexIterator;
-
 typedef std::list<Offset_polygon_2>::iterator                        Op2_it;
+typedef std::vector<Offset_polygon_with_holes_2>                     Pwh_list_2;
+
+                                   /* for conic arc */
+
 typedef Conic_traits_2::X_monotone_curve_2                           X_monotone_curve_2;
 typedef Conic_traits_2::Curve_2                                      Conic_curve_2;
 typedef Conic_traits_2::Point_2                                      Conic_point_2;
 typedef std::list<X_monotone_curve_2>                                X_monotone_curves_2;
 typedef X_monotone_curves_2::iterator                                X_curve_2_it;
 
+                                        /* others */
+
 typedef std::pair<double, double>                                    approximated_point_2;
-typedef std::vector<Offset_polygon_with_holes_2>                     Pwh_list_2;
-
-
-
 
 class sceneResults : public QGraphicsScene
 {
+public:
+
 public:
     sceneResults();
     void paint_env(std::vector<QPoint> env);
@@ -94,11 +97,9 @@ public:
     void paint_ccI(std::vector<Arrangement_2> ccI);
     void paint_ccII(std::vector<Arrangement_2> ccII);
     void paint_arrangement(Arrangement_2 arr, QColor color, bool displayText, QColor colorText);
-    void paint_curves(X_curve_2_it curve);
+    void paint_curves(X_curve_2_it curve, QColor color);
+    void paint_face_id(std::vector<std::vector<double> > &point_in_faces);
     void newProblem();
-
-public:
-
 };
 
 #endif // SCENERESULTS_H

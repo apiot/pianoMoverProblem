@@ -38,12 +38,12 @@ sceneResults::paint_offset(std::vector<Offset_polygon_with_holes_2> offsets)
     for (int i = 0; i < (int)offsets.size(); ++i)
     {
         for (X_curve_2_it curve = offsets[i].outer_boundary().curves_begin(); curve != offsets[i].outer_boundary().curves_end(); ++curve)
-            paint_curves(curve);
+            paint_curves(curve, Qt::black);
 
         if (offsets[i].has_holes())
             for (Op2_it pit = offsets[i].holes_begin(); pit != offsets[i].holes_end(); ++pit)
                 for (X_curve_2_it curve = pit->curves_begin(); curve != pit->curves_end(); ++curve)
-                    paint_curves(curve);
+                    paint_curves(curve, Qt::black);
     }
 }
 
@@ -52,7 +52,7 @@ sceneResults::paint_inset(std::list<Offset_polygon_2> inset)
 {
     for (Op2_it iit = inset.begin(); iit != inset.end(); ++iit)
         for (X_curve_2_it curve = iit->curves_begin(); curve != iit->curves_end(); ++curve)
-            paint_curves(curve);
+            paint_curves(curve, Qt::black);
 }
 
 void
@@ -71,12 +71,12 @@ sceneResults::paint_convolution(Pwh_list_2 admis)
         for (X_curve_2_it curve = admis[i].outer_boundary().curves_begin(); curve != admis[i].outer_boundary().curves_end(); ++curve)
         {
 
-            paint_curves(curve);
+            paint_curves(curve, Qt::red);
         }
         if (admis[i].has_holes())
             for (Op2_it pit = admis[i].holes_begin(); pit != admis[i].holes_end(); ++pit)
                 for (X_curve_2_it curve = pit->curves_begin(); curve != pit->curves_end(); ++curve)
-                    paint_curves(curve);
+                    paint_curves(curve, Qt::red);
 
     }
 }
@@ -147,8 +147,9 @@ sceneResults::paint_arrangement(Arrangement_2 arr, QColor colorPen, bool display
 }
 
 void
-sceneResults::paint_curves(X_curve_2_it curve)
+sceneResults::paint_curves(X_curve_2_it curve, QColor color = Qt::black)
 {
+    QPen pen(color);
     // TODO: improve the number of points used for the approximation..
     int n = 25;
     approximated_point_2* points = new approximated_point_2[n + 1];
@@ -158,7 +159,7 @@ sceneResults::paint_curves(X_curve_2_it curve)
         // Draw a segment.
         QPointF p1 = QPointF(points[0].first, points[0].second);
         QPointF p2 = QPointF(points[1].first, points[1].second);
-        addLine(p1.x(),p1.y(),p2.x(),p2.y());
+        addLine(p1.x(),p1.y(),p2.x(),p2.y(), pen);
     }
     else
     {
@@ -167,8 +168,20 @@ sceneResults::paint_curves(X_curve_2_it curve)
         {
             QPointF p1 = QPointF(points[i-1].first, points[i-1].second);
             QPointF p2 = QPointF(points[i].first, points[i].second);
-            addLine(p1.x(),p1.y(),p2.x(),p2.y());
+            addLine(p1.x(),p1.y(),p2.x(),p2.y(), pen);
         }
+    }
+}
+
+void
+sceneResults::paint_face_id(std::vector<std::vector<double> > &point_in_faces)
+{
+    for (int i = 0; i < (int)point_in_faces.size(); ++i)
+    {
+        QGraphicsSimpleTextItem *t = new QGraphicsSimpleTextItem(QString::fromStdString(std::to_string(i)));
+        t->setBrush(Qt::blue);
+        t->setPos(((int)point_in_faces[i][0])-10, ((int)point_in_faces[i][1])-10);
+        addItem(t);
     }
 }
 

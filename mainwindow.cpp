@@ -441,7 +441,7 @@ MainWindow::compute()
         progressBar->setValue(0);
 
 
-        statusBarRight->setText(QString::fromStdString("Computing starts : retrieve datas"));
+        statusBarRight->setText(QString::fromStdString("Retrieving datas"));
 
 
         problem->retrieveData(sceneProblem->pEnv,sceneProblem->pObs,sceneProblem->manip_begin,
@@ -454,17 +454,19 @@ MainWindow::compute()
 
 
         problem->compute_admissible_configuration();
+        problem->compute_convolutionLabels();
 
         statusBarRight->setText(QString::fromStdString("Paint Convolution"));
 
 
         admissibleR->paint_env(problem->frontier);
         admissibleR->paint_obstacles(problem->obstacles);
-        admissibleR->paint_convolution(problem->admissible);
+        admissibleR->paint_cc_convolution(problem->convolutions);
+
         admissibleO->paint_env(problem->frontier);
         admissibleO->paint_obstacles(problem->obstacles);
-        admissibleO->paint_convolution(problem->admissible_o);
-        problem->compute_convolutionLabels();
+        admissibleO->paint_cc_convolution(problem->convolutions_o);
+
 
         progressBar->setValue(20);
 
@@ -476,14 +478,22 @@ MainWindow::compute()
 
         statusBarRight->setText(QString::fromStdString("Paint Critical Curves"));
 
-
+        progressBar->setValue(70);
         criticalCurves->paint_env(problem->frontier);
         criticalCurves->paint_obstacles(problem->obstacles);
-        criticalCurves->paint_cc_convolution(problem->convolutions);
+        criticalCurves->paint_convolution(problem->admissible_o);
         criticalCurves->paint_ccI(problem->ccI);
         criticalCurves->paint_ccII(problem->ccII);
 
         progressBar->setValue(80);
+
+        statusBarRight->setText(QString::fromStdString("Compute ACScell"));
+
+        problem->compute_pointInCells();
+        problem->compute_neighbours();
+
+        criticalCurves->paint_face_id(problem->point_in_faces);
+
         statusBarRight->setText(QString::fromStdString("Computation Done"));
         progressBar->setVisible(false);
 
@@ -529,6 +539,7 @@ MainWindow::openFile()
     windowFile->setFileMode(QFileDialog::ExistingFile);
     windowFile->setNameFilter(tr("Files (*.pmb)"));
     windowFile->setVisible(true);
+    windowFile->setLabelText(QFileDialog::Accept, "Open");
     if (windowFile->exec())
     {
         fileNames = windowFile->selectedFiles();
@@ -698,6 +709,7 @@ MainWindow::saveFileData()
     QStringList fileNames;
     windowFile->setFileMode(QFileDialog::AnyFile);
     windowFile->setVisible(true);
+    windowFile->setLabelText(QFileDialog::Accept, "Save");
     if (windowFile->exec())
     {
         fileNames = windowFile->selectedFiles();
@@ -754,6 +766,7 @@ MainWindow::saveFileAll()
     QStringList dirNames;
     windowFile->setFileMode(QFileDialog::Directory);
     windowFile->setVisible(true);
+    windowFile->setLabelText(QFileDialog::Accept, "Save");
     if (windowFile->exec())
     {
         dirNames = windowFile->selectedFiles();

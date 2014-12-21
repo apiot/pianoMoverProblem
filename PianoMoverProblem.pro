@@ -27,13 +27,13 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     sceneproblem.cpp \
     arrangement.cpp \
-    toolbox.cpp \
-    sceneresults.cpp
+    sceneresults.cpp \
+    acscell.cpp
 
 HEADERS  += mainwindow.h \
     sceneproblem.h \
     arrangement.h \
-    toolbox.h \
-    sceneresults.h
+    sceneresults.h \
+    acscell.h
 
 FORMS    += mainwindow.ui
