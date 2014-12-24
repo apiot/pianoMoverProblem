@@ -147,11 +147,17 @@ arrangement::compute_admissible_configuration()
     {
         Arrangement_2 arr;
         for (X_curve_2_it curve = admissible_o[i].outer_boundary().curves_begin(); curve != admissible_o[i].outer_boundary().curves_end(); ++curve)
+        {
             insert(arr, *curve);
+            insert(nonCriticalRegions, *curve);
+        }
         if (admissible_o[i].has_holes())
             for(Op2_it hol = admissible_o[i].holes_begin(); hol != admissible_o[i].holes_end(); ++hol)
                 for (X_curve_2_it curve = hol->curves_begin(); curve != hol->curves_end(); ++curve)
+                {
                     insert(arr, *curve);
+                    insert(nonCriticalRegions, *curve);
+                }
         convolutions_o.push_back(arr);
     }
     for (int i = 0; i < (int) convolutions_o.size(); ++i)
@@ -159,6 +165,7 @@ arrangement::compute_admissible_configuration()
         int cpt = 0;
         for (Arrangement_2::Face_iterator face = convolutions_o[i].faces_begin(); face != convolutions_o[i].faces_end(); ++face)
             face->set_data(cpt++);
+        /*
         for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
         {
             edge->set_data("none");
@@ -166,6 +173,7 @@ arrangement::compute_admissible_configuration()
         }
         for (Arrangement_2::Vertex_iterator vertex = convolutions_o[i].vertices_begin(); vertex != convolutions_o[i].vertices_end(); ++vertex)
             vertex->set_data("none");
+        */
     }
 
     // save environment vertices
@@ -273,67 +281,52 @@ arrangement::compute_convolutionLabels()
 }
 
 void
-arrangement::keep_arc(Arrangement_2 &arr, Arrangement_2::Edge_iterator &e, Arrangement_2 &copy2, Walk_pl &walk_pl)
+arrangement::keep_arc(Arrangement_2::Edge_iterator &e, Arrangement_2 &copy, Walk_pl &walk_pl)
 {
-    if ((e->data().compare("") == 0))
+    e->set_data("none");
+    Conic_point_2 p;
+    // if it is a segment
+    if (e->curve().orientation() == CGAL::COLLINEAR)
     {
-        // if it is a segment
-        if (e->curve().orientation() == CGAL::COLLINEAR)
-        {
-            Conic_point_2 source = e->curve().source();
-            Conic_point_2 target = e->curve().target();
-            double x = CGAL::to_double((target.x() + source.x()) /2);
-            double y = CGAL::to_double((target.y() + source.y()) /2);
-            Rational x_(x);
-            Rational y_(y);
-            Conic_point_2 p(x_,y_);
-
-            Arrangement_2::Vertex_handle v = insert_point(copy2, p, walk_pl);
-            try
-            {
-                if (v->face()->data() == 1)
-                    insert(arr, e->curve());
-                copy2.remove_isolated_vertex(v);
-            }
-            catch (const std::exception exn) {}
-
-        }
-        else // if it is an arc
-        {
-            int n = 2;
-            approximated_point_2* points = new approximated_point_2[n + 1];
-            e->curve().polyline_approximation(n, points); // there is 3 points
-            Conic_point_2 p(Rational(points[1].first),Rational(points[1].second));
-
-            Arrangement_2::Vertex_handle v = insert_point(copy2, p, walk_pl);
-            try
-            {
-                if (v->face()->data() == 1)
-                    insert(arr, e->curve());
-                copy2.remove_isolated_vertex(v);
-            }
-            catch (const std::exception exn) {}
-        }
+        Conic_point_2 source = e->curve().source();
+        Conic_point_2 target = e->curve().target();
+        double x = CGAL::to_double((target.x() + source.x()) /2);
+        double y = CGAL::to_double((target.y() + source.y()) /2);
+        Rational x_(x);
+        Rational y_(y);
+        p = Conic_point_2(x_,y_);
     }
+    else // if it is an arc
+    {
+        int n = 2;
+        approximated_point_2* points = new approximated_point_2[n + 1];
+        e->curve().polyline_approximation(n, points); // there is 3 points
+        p = Conic_point_2(Rational(points[1].first),Rational(points[1].second));
+    }
+
+    Arrangement_2::Vertex_handle v = insert_point(copy, p, walk_pl);
+    try
+    {
+        if (v->face()->data() != 1)
+            nonCriticalRegions.remove_edge(e, false, false);
+        copy.remove_isolated_vertex(v);
+    }
+    catch (const std::exception exn) {}
 }
 
 void
 arrangement::compute_criticalCurves_type_I()
 {
+    double radius_1 = ((double)manipulator_diametre)/2.0;
+    double radius_2 = ((double)target_diametre)/2.0;
 
     for (int i = 0; i < (int) convolutions_o.size(); ++i)
     {
-        double radius_1 = ((double)manipulator_diametre)/2.0;
-        double radius_2 = ((double)target_diametre)/2.0;
-        Arrangement_2 arr;
-        Arrangement_2 copy2(convolutions_o[i]);
-        Walk_pl walk_pl(copy2);
+        Arrangement_2 copy(convolutions_o[i]);
+        Walk_pl walk_pl(copy);
         // Add the critical curves of type I.
         for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
         {
-            // do a copy of convolution arrangement
-            Arrangement_2 copy(convolutions_o[i]);
-
             if (CGAL::COLLINEAR == edge->curve().orientation())
             {
                 // Displaced a segment.
@@ -353,25 +346,16 @@ arrangement::compute_criticalCurves_type_I()
                 Algebraic_ft c = factor * length + (source.y() * target.x() - source.x() * target.y());
                 X_monotone_curve_2 x_monotone_curve(a, b, c, point_1, point_2);
 
-                insert(copy, x_monotone_curve);
-
-                // keep only wanted curves and put it in the arrangement
-                for (Arrangement_2::Edge_iterator e = copy.edges_begin(); e != copy.edges_end(); ++e)
-                    keep_arc(arr, e, copy2, walk_pl);
-
+                insert(nonCriticalRegions, x_monotone_curve);
             }
             else
             {
                 // Displaces an arc.
                 Rational two(2);
-                Rational four(4);
 
                 Rational r = edge->curve().r();
-                Rational s = edge->curve().s();
-                Rational t = edge->curve().t();
                 Rational u = edge->curve().u();
                 Rational v = edge->curve().v();
-                Rational w = edge->curve().w();
 
                 Nt_traits nt_traits;
                 Rational x_center = - u / (two * r);
@@ -394,17 +378,17 @@ arrangement::compute_criticalCurves_type_I()
                 Conic_point_2 target_2(x_target_2, y_target_2);
 
                 Rat_circle_2 circle(rat_center, radius * radius);
-
                 Conic_curve_2 conic_arc(circle, CGAL::CLOCKWISE, source_2, target_2);
 
-                insert(copy, conic_arc);
-
-                // keep only wanted curves and put it in the arrangement
-                for (Arrangement_2::Edge_iterator e = copy.edges_begin(); e != copy.edges_end(); ++e)
-                    keep_arc(arr, e, copy2, walk_pl);
+                insert(nonCriticalRegions, conic_arc);
             }
         }
-        ccI.push_back(arr);
+        // keep only wanted curves and put it in the arrangement
+        for (Arrangement_2::Edge_iterator e = nonCriticalRegions.edges_begin(); e != nonCriticalRegions.edges_end(); ++e)
+            if ((e->data().compare("") == 0))
+                keep_arc(e, copy, walk_pl);
+        for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
+            insert(nonCriticalRegions, edge->curve());
     }
 
 }
@@ -415,13 +399,12 @@ arrangement::compute_criticalCurves_type_II()
     for (int i = 0; i < (int) convolutions_o.size(); ++i)
     {
         // for all convolution arrangements
-        Arrangement_2 arr;
         Arrangement_2::Edge_iterator first = convolutions_o[i].edges_begin();
         Arrangement_2::Edge_iterator previous = convolutions_o[i].edges_begin();
         bool flag = true;
 
-        Arrangement_2 copy2(convolutions_o[i]);
-        Walk_pl walk_pl(copy2);
+        Arrangement_2 copy(convolutions_o[i]);
+        Walk_pl walk_pl(copy);
 
         for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
         {
@@ -433,8 +416,6 @@ arrangement::compute_criticalCurves_type_II()
 
             if (previous->data().compare(edge->data()) != 0)
             {
-                // do a copy of convolution arrangement
-                Arrangement_2 copy(convolutions_o[i]);
                 // add critical curve type II in the copy
                 double x = CGAL::to_double(edge->curve().source().x());
                 double y = CGAL::to_double(edge->curve().source().y());
@@ -442,19 +423,13 @@ arrangement::compute_criticalCurves_type_II()
                 Rat_point_2 center(x, y);
                 Rat_circle_2 circle(center, radius * radius);
                 Conic_curve_2 conic_arc(circle);
-                insert(copy, conic_arc);
-
-                // keep only wanted curves and put it in the arrangement
-                for (Arrangement_2::Edge_iterator e = copy.edges_begin(); e != copy.edges_end(); ++e)
-                    keep_arc(arr, e, copy2, walk_pl);
+                insert(nonCriticalRegions, conic_arc);
             }
 
             previous = edge;
         }
         if (previous->data().compare(first->data()) != 0)
         {
-            // do a copy of convolution arrangement
-            Arrangement_2 copy(convolutions_o[i]);
             // add critical curve type II in the copy
             double x = CGAL::to_double(first->curve().source().x());
             double y = CGAL::to_double(first->curve().source().y());
@@ -462,13 +437,15 @@ arrangement::compute_criticalCurves_type_II()
             Rat_point_2 center(x, y);
             Rat_circle_2 circle(center, radius * radius);
             Conic_curve_2 conic_arc(circle);
-            insert(copy, conic_arc);
-
-            // keep only wanted curves and put it in the arrangement
-            for (Arrangement_2::Edge_iterator e = copy.edges_begin(); e != copy.edges_end(); ++e)
-                keep_arc(arr, e, copy2, walk_pl);
+            insert(nonCriticalRegions, conic_arc);
         }
-        ccII.push_back(arr);
+
+        // keep only wanted curves and put it in the arrangement
+        for (Arrangement_2::Edge_iterator e = nonCriticalRegions.edges_begin(); e != nonCriticalRegions.edges_end(); ++e)
+            if ((e->data().compare("") == 0))
+                keep_arc(e, copy, walk_pl);
+        for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
+            insert(nonCriticalRegions, edge->curve());
     }
 }
 
@@ -497,40 +474,24 @@ arrangement::getPointMiddle(Arrangement_2::Ccb_halfedge_circulator &edge)
 void
 arrangement::compute_pointInCells()
 {
-    for (int i = 0; i < (int) convolutions_o.size(); ++i)
-    {
-        for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
-            insert(nonCriticalRegions, edge->curve());
-        for (Arrangement_2::Edge_iterator edge = ccI[i].edges_begin(); edge != ccI[i].edges_end(); ++edge)
-            insert(nonCriticalRegions, edge->curve());
-        for (Arrangement_2::Edge_iterator edge = ccII[i].edges_begin(); edge != ccII[i].edges_end(); ++edge)
-            insert(nonCriticalRegions, edge->curve());
-    }
-
-    printArrConsole(&nonCriticalRegions);
-
     Walk_pl walk_pl(nonCriticalRegions);
 
     int cpt = 0;
     for (Arrangement_2::Face_iterator face = nonCriticalRegions.faces_begin(); face != nonCriticalRegions.faces_end(); ++face)
     {
-
-        if (!face->is_unbounded())
+        if (face->is_unbounded())
+            face->set_data(-1);
+        else
         {
             // set data to each face
             face->set_data(cpt++);
-            // find a point within this face
+            // find a point in this face
             Arrangement_2::Ccb_halfedge_circulator previous = face->outer_ccb();
-            bool flag = true;
             Arrangement_2::Ccb_halfedge_circulator first_edge = face->outer_ccb();
             Arrangement_2::Ccb_halfedge_circulator edge = face->outer_ccb();
+            ++edge;
             do
             {
-                if (flag)
-                {
-                    ++edge;
-                    flag = false;
-                }
                 std::vector<double> p1 = getPointMiddle(previous);
                 std::vector<double> p2 = getPointMiddle(edge);
                 std::vector<double> m;
@@ -561,6 +522,8 @@ arrangement::compute_pointInCells()
 void
 arrangement::print_neighbours()
 {
+    printArrConsole(&nonCriticalRegions);
+
     for (int i = 0; i < (int) neighbours.size(); ++i)
     {
         std::cout << "For face " << i << " - neighbours : ";
@@ -593,9 +556,7 @@ arrangement::compute_neighbours()
             {
                 Arrangement_2::Face_handle adjacent_face = outer_ccb->twin()->face();
                 if (!adjacent_face->is_unbounded())
-                {
                     voisins.push_back(adjacent_face->data());
-                }
                 ++outer_ccb;
             } while (outer_ccb != first_outer_ccb);
 

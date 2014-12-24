@@ -18,7 +18,7 @@ public:
     void compute_admissible_configuration();
     std::string getLabel(std::vector<std::string> &labels, X_monotone_curve_2 &curve, int &cpt, double &r);
     void compute_convolutionLabels();
-    void keep_arc(Arrangement_2 &arr, Arrangement_2::Edge_iterator &e, Arrangement_2 &copy2, Walk_pl &walk_pl);
+    void keep_arc(Arrangement_2::Edge_iterator &e, Arrangement_2 &copy, Walk_pl &walk_pl);
     void compute_criticalCurves_type_I();
     void compute_criticalCurves_type_II();
     std::vector<double> getPointMiddle(Arrangement_2::Ccb_halfedge_circulator &edge);

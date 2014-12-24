@@ -481,9 +481,10 @@ MainWindow::compute()
         progressBar->setValue(70);
         criticalCurves->paint_env(problem->frontier);
         criticalCurves->paint_obstacles(problem->obstacles);
-        criticalCurves->paint_convolution(problem->admissible_o);
-        criticalCurves->paint_ccI(problem->ccI);
-        criticalCurves->paint_ccII(problem->ccII);
+        //criticalCurves->paint_convolution(problem->admissible_o);
+        //criticalCurves->paint_ccI(problem->ccI);
+        //criticalCurves->paint_ccII(problem->ccII);
+        criticalCurves->paint_arrangement(problem->nonCriticalRegions, Qt::red, false, Qt::black);
 
         progressBar->setValue(80);
 
