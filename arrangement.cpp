@@ -625,7 +625,7 @@ arrangement::compute_ACScell()
 }
 
 void
-arrangement::compute_GRAPScell()
+arrangement::compute_GRASPcell()
 {
 
 }

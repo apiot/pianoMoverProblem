@@ -26,7 +26,7 @@ public:
     void print_neighbours();
     void compute_neighbours();
     void compute_ACScell();
-    void compute_GRAPScell();
+    void compute_GRASPcell();
     void newProblem();
 
 public:
