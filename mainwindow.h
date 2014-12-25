@@ -3,7 +3,9 @@
 
 #include "sceneproblem.h"
 #include "sceneresults.h"
+#include "acscell.h"
 #include "arrangement.h"
+
 
 #include <string>
 

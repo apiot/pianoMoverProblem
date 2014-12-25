@@ -16,8 +16,8 @@
 #include <CGAL/CORE_algebraic_number_traits.h>
 #include <CGAL/Arr_conic_traits_2.h>
 #include <CGAL/Arrangement_2.h>
-//#include <CGAL/Arrangement_on_surface_with_history_2.h>
-//#include <CGAL/Arrangement_with_history_2.h>
+#include <CGAL/Arrangement_on_surface_with_history_2.h>
+#include <CGAL/Arrangement_with_history_2.h>
 #include <CGAL/Arr_extended_dcel.h>
 #include <CGAL/Arr_walk_along_line_point_location.h>
 
@@ -59,6 +59,11 @@ typedef CGAL::Arrangement_2<Conic_traits_2, Dcel>                    Arrangement
 typedef Arrangement_2::Face_handle                                   Face_handle;
 typedef CGAL::Arr_naive_point_location<Arrangement_2>                Naive_pl;
 typedef CGAL::Arr_walk_along_line_point_location<Arrangement_2>      Walk_pl;
+// with history
+/*
+typedef CGAL::Arrangement_with_history_2<Conic_traits_2, Dcel>       Arr_with_hist_2;
+typedef CGAL::Arr_walk_along_line_point_location<Arr_with_hist_2>    Hist_Walk_pl;
+*/
 
                                       /* for polygon */
 typedef CGAL::Polygon_2<Rat_kernel>                                  Polygon_2;
@@ -71,7 +76,6 @@ typedef std::list<Offset_polygon_2>::iterator                        Op2_it;
 typedef std::vector<Offset_polygon_with_holes_2>                     Pwh_list_2;
 
                                    /* for conic arc */
-
 typedef Conic_traits_2::X_monotone_curve_2                           X_monotone_curve_2;
 typedef Conic_traits_2::Curve_2                                      Conic_curve_2;
 typedef Conic_traits_2::Point_2                                      Conic_point_2;
@@ -79,8 +83,9 @@ typedef std::list<X_monotone_curve_2>                                X_monotone_
 typedef X_monotone_curves_2::iterator                                X_curve_2_it;
 
                                         /* others */
-
 typedef std::pair<double, double>                                    approximated_point_2;
+
+
 
 class sceneResults : public QGraphicsScene
 {

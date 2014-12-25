@@ -490,10 +490,13 @@ MainWindow::compute()
 
         statusBarRight->setText(QString::fromStdString("Compute ACScell"));
 
-        problem->compute_pointInCells();
+        problem->compute_pointInCells(problem->nonCriticalRegions, problem->point_in_faces);
         problem->compute_neighbours();
 
         criticalCurves->paint_face_id(problem->point_in_faces);
+
+        problem->compute_ACScell();
+
 
         statusBarRight->setText(QString::fromStdString("Computation Done"));
         progressBar->setVisible(false);

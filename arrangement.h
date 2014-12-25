@@ -22,9 +22,10 @@ public:
     void compute_criticalCurves_type_I();
     void compute_criticalCurves_type_II();
     std::vector<double> getPointMiddle(Arrangement_2::Ccb_halfedge_circulator &edge);
-    void compute_pointInCells();
+    void compute_pointInCells(Arrangement_2 &arr, std::vector<std::vector<double> > &points);
     void print_neighbours();
     void compute_neighbours();
+    void printACScells();
     void compute_ACScell();
     void compute_GRASPcell();
     void newProblem();
@@ -58,13 +59,15 @@ public:
     // computed arrangement data
     std::vector<Arrangement_2> convolutions; // robot
     std::vector<Arrangement_2> convolutions_o;
-    std::vector<Arrangement_2> ccI;
-    std::vector<Arrangement_2> ccII;
+    //std::vector<Arrangement_2> ccI;
+    //std::vector<Arrangement_2> ccII;
 
    // for Graphs
     Arrangement_2 nonCriticalRegions;
+    Arrangement_2 convolution_r_all;
     std::vector<std::vector<double> > point_in_faces;
     std::vector<std::vector<int> > neighbours;
+    std::vector<ACScell> ACScells;
 };
 
 #endif // ARRANGEMENT_H

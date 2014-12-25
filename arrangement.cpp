@@ -472,12 +472,12 @@ arrangement::getPointMiddle(Arrangement_2::Ccb_halfedge_circulator &edge)
 }
 
 void
-arrangement::compute_pointInCells()
+arrangement::compute_pointInCells(Arrangement_2 &arr, std::vector<std::vector<double> > &points)
 {
-    Walk_pl walk_pl(nonCriticalRegions);
+    Walk_pl walk_pl(arr);
 
     int cpt = 0;
-    for (Arrangement_2::Face_iterator face = nonCriticalRegions.faces_begin(); face != nonCriticalRegions.faces_end(); ++face)
+    for (Arrangement_2::Face_iterator face = arr.faces_begin(); face != arr.faces_end(); ++face)
     {
         if (face->is_unbounded())
             face->set_data(-1);
@@ -500,15 +500,44 @@ arrangement::compute_pointInCells()
                 Rational x_(m[0]);
                 Rational y_(m[1]);
                 Conic_point_2 p(x_,y_);
-                Arrangement_2::Vertex_handle v = insert_point(nonCriticalRegions, p, walk_pl);
+
+                Arrangement_2::Vertex_handle v = insert_point(arr, p, walk_pl);
                 try
                 {
                     if (v->face()->data() == (cpt-1))
                     {
-                        point_in_faces.push_back(m);
+                        bool flag = false;
+                        // test if it is not in holes and not in unbounded face
+                        for (int i = 0; i < (int) convolutions_o.size(); ++i)
+                        {
+                            Walk_pl wpl(convolutions_o[i]);
+                            Arrangement_2::Vertex_handle t = insert_point(convolutions_o[i], p, wpl);
+                            if (t->face()->data() == 1)
+                            {
+                                convolutions_o[i].remove_isolated_vertex(t);
+                                break;
+                            }
+                            else if (t->face()->data() == 2 || t->face()->data() == 0)
+                            {
+                                flag = true;
+                                convolutions_o[i].remove_isolated_vertex(t);
+                                break;
+                            }
+                        }
+
+                        // then continue
+                        if (!flag)
+                            points.push_back(m);
+                        else
+                        {
+                            --cpt;
+                            face->set_data(-1);
+                        }
+
+                        arr.remove_isolated_vertex(v);
                         break;
                     }
-                    nonCriticalRegions.remove_isolated_vertex(v);
+                    arr.remove_isolated_vertex(v);
                 }
                 catch (const std::exception exn) {}
                 previous = edge;
@@ -526,15 +555,18 @@ arrangement::print_neighbours()
 
     for (int i = 0; i < (int) neighbours.size(); ++i)
     {
-        std::cout << "For face " << i << " - neighbours : ";
-        for  (int j = 0; j < (int) neighbours[i].size(); ++j)
+        if (0 < (int)neighbours[i].size())
         {
-            if (neighbours[i][j] == i)
-                std::cout << " [[" << neighbours[i][j] << "]]";
-            else
-                std::cout << " " << neighbours[i][j];
+            std::cout << "For face " << i << " - neighbours : ";
+            for  (int j = 0; j < (int) neighbours[i].size(); ++j)
+            {
+                if (neighbours[i][j] == i)
+                    std::cout << " [[" << neighbours[i][j] << "]]";
+                else
+                    std::cout << " " << neighbours[i][j];
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 }
 
@@ -544,7 +576,7 @@ arrangement::compute_neighbours()
     neighbours.resize(nonCriticalRegions.number_of_faces() - 1); // minus unbounded face
     for (Arrangement_2::Face_iterator face = nonCriticalRegions.faces_begin(); face != nonCriticalRegions.faces_end(); ++face)
     {
-        if (!face->is_unbounded())
+        if (!face->is_unbounded() && face->data() != -1)
         {
             Arrangement_2::Ccb_halfedge_circulator first_outer_ccb = face->outer_ccb();
             Arrangement_2::Ccb_halfedge_circulator outer_ccb = face->outer_ccb();
@@ -580,8 +612,86 @@ arrangement::compute_neighbours()
 }
 
 void
+arrangement::printACScells()
+{
+    std::cout << std::endl;
+    std::cout << "**************** ACScells ****************" << std::endl;
+    for (int i = 0; i < (int) ACScells.size(); ++i)
+    {
+        std::cout << "NCR : " << std::to_string(ACScells[i].NCR) << " - Labels : ";
+        for (int j = 0; j < (int) ACScells[i].labels.size(); ++j)
+            std::cout << ACScells[i].labels[j] << " ";
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void
 arrangement::compute_ACScell()
 {
+    for (int i = 0; i < (int)convolutions.size(); ++i)
+        for (Arrangement_2::Edge_iterator edge = convolutions[i].edges_begin(); edge != convolutions[i].edges_end(); ++edge)
+        {
+            convolution_r_all = Arrangement_2(convolutions[i]);
+            /*insert(convolution_r_all, edge->curve());
+            Arrangement_2::Edge_iterator e = convolution_r_all.edges_end();
+            e->set_data(edge->data());
+            */
+        }
+
+    std::cout << "edge label convo : ";
+    for (Arrangement_2::Edge_iterator edge = convolution_r_all.edges_begin(); edge != convolution_r_all.edges_end(); ++edge)
+        std::cout << edge->data() << " ";
+    std::cout << std::endl;
+
+    for (int i = 0; i < (int)point_in_faces.size(); ++i)
+    {
+        // do a copy
+        Arrangement_2 copy(convolution_r_all);
+        // add a circle
+        Rat_point_2 center(point_in_faces[i][0], point_in_faces[i][1]);
+        Rat_circle_2 circle(center, r1r2 * r1r2);
+        Conic_curve_2 conic_arc(circle);
+        insert(copy, conic_arc);
+
+        Walk_pl walk_pl(copy);
+
+        std::vector<std::vector<double> > points;
+        compute_pointInCells(copy, points);
+
+        for (int j = 0; j < (int)points.size(); ++j)
+        {
+            double _x = point_in_faces[i][0] - points[j][0];
+            double _y = point_in_faces[i][1] - points[j][1];
+            if (r1r2 < sqrt(_x * _x + _y * _y))
+            {
+                Rational x_(points[j][0]);
+                Rational y_(points[j][1]);
+                Conic_point_2 p(x_,y_);
+                Arrangement_2::Vertex_handle v = insert_point(copy, p, walk_pl);
+                try
+                {
+                    ACScell cell(i);
+
+                    Arrangement_2::Ccb_halfedge_circulator first_outer_ccb = v->face()->outer_ccb();
+                    Arrangement_2::Ccb_halfedge_circulator outer_ccb = v->face()->outer_ccb();
+                    do
+                    {
+                        cell.addLabel(outer_ccb->data());
+                        ++outer_ccb;
+                    } while (outer_ccb != first_outer_ccb);
+
+                    ACScells.push_back(cell);
+
+                }
+                catch (const std::exception exn) {}
+            }
+        }
+
+    }
+
+    // print results
+    printACScells();
 
 }
 
@@ -607,11 +717,14 @@ arrangement::newProblem()
     // reset arrangement data
     convolutions.clear();
     convolutions_o.clear();
-    ccI.clear();
-    ccII.clear();
+    //ccI.clear();
+    //ccII.clear();
     // reset for graphs
     nonCriticalRegions.clear();
+    convolution_r_all.clear();
     point_in_faces.clear();
     neighbours.clear();
+    ACScells.clear();
+
 }
 

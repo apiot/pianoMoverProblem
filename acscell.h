@@ -1,7 +1,10 @@
 #ifndef ACSCELL_H
 #define ACSCELL_H
 
-#include "mainwindow.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include <string>
+#include "sceneresults.h"
 
 /* Admissible Configuration Set Cell */
 class ACScell
@@ -16,6 +19,7 @@ public:
     std::vector<std::string> labels;
     /* NCR = Non Critical Region (cell built with critical curves in object convolution */
     int NCR;
+    Arrangement_2 arr;
 };
 
 #endif // ACSCELL_H
