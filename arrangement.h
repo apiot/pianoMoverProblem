@@ -62,12 +62,13 @@ public:
     //std::vector<Arrangement_2> ccI;
     //std::vector<Arrangement_2> ccII;
 
-   // for Graphs
+    // for Graphs
     Arrangement_2 nonCriticalRegions;
-    Arrangement_2 convolution_r_all;
+    //Arrangement_2 convolution_r_all;
     std::vector<std::vector<double> > point_in_faces;
     std::vector<std::vector<int> > neighbours;
     std::vector<ACScell> ACScells;
+    std::vector<GRASPcell> GRASPcells;
 };
 
 #endif // ARRANGEMENT_H

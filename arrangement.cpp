@@ -1,4 +1,31 @@
 #include "arrangement.h"
+#include "graspcell.h"
+
+/* OBSERVER */
+class Observer : public CGAL::Arr_observer<Arrangement_2>
+{
+public:
+    Observer (Arrangement_2& arr) : CGAL::Arr_observer<Arrangement_2> (arr)
+    {
+    }
+
+    virtual void after_split_edge (Halfedge_handle h1, Halfedge_handle h2)
+    {
+        std::string str = h1->data();
+        if (str.compare("") == 0)
+            str = h2->data();
+        if (str.compare("") == 0)
+            str = h1->twin()->data();
+        if (str.compare("") == 0)
+            str = h2->twin()->data();
+        h1->set_data(str);
+        h2->set_data(str);
+        h1->twin()->set_data(str);
+        h2->twin()->set_data(str);
+    }
+};
+// END OBSERVER
+
 
 arrangement::arrangement()
 {
@@ -165,15 +192,6 @@ arrangement::compute_admissible_configuration()
         int cpt = 0;
         for (Arrangement_2::Face_iterator face = convolutions_o[i].faces_begin(); face != convolutions_o[i].faces_end(); ++face)
             face->set_data(cpt++);
-        /*
-        for (Arrangement_2::Edge_iterator edge = convolutions_o[i].edges_begin(); edge != convolutions_o[i].edges_end(); ++edge)
-        {
-            edge->set_data("none");
-            edge->twin()->set_data("none");
-        }
-        for (Arrangement_2::Vertex_iterator vertex = convolutions_o[i].vertices_begin(); vertex != convolutions_o[i].vertices_end(); ++vertex)
-            vertex->set_data("none");
-        */
     }
 
     // save environment vertices
@@ -608,7 +626,7 @@ arrangement::compute_neighbours()
                 }
 
     // print results
-    print_neighbours();
+    //print_neighbours();
 }
 
 void
@@ -618,7 +636,7 @@ arrangement::printACScells()
     std::cout << "**************** ACScells ****************" << std::endl;
     for (int i = 0; i < (int) ACScells.size(); ++i)
     {
-        std::cout << "NCR : " << std::to_string(ACScells[i].NCR) << " - Labels : ";
+        std::cout << ACScells[i].id << " - Labels : ";
         for (int j = 0; j < (int) ACScells[i].labels.size(); ++j)
             std::cout << ACScells[i].labels[j] << " ";
         std::cout << std::endl;
@@ -629,30 +647,47 @@ arrangement::printACScells()
 void
 arrangement::compute_ACScell()
 {
+    /*
     for (int i = 0; i < (int)convolutions.size(); ++i)
         for (Arrangement_2::Edge_iterator edge = convolutions[i].edges_begin(); edge != convolutions[i].edges_end(); ++edge)
         {
             convolution_r_all = Arrangement_2(convolutions[i]);
-            /*insert(convolution_r_all, edge->curve());
+            insert(convolution_r_all, edge->curve());
             Arrangement_2::Edge_iterator e = convolution_r_all.edges_end();
             e->set_data(edge->data());
-            */
-        }
 
+        }
+    */
+
+
+    /*
     std::cout << "edge label convo : ";
     for (Arrangement_2::Edge_iterator edge = convolution_r_all.edges_begin(); edge != convolution_r_all.edges_end(); ++edge)
         std::cout << edge->data() << " ";
     std::cout << std::endl;
+    */
 
     for (int i = 0; i < (int)point_in_faces.size(); ++i)
     {
         // do a copy
-        Arrangement_2 copy(convolution_r_all);
+        Arrangement_2 copy(convolutions[0]);
+        Observer observer(copy);
+
         // add a circle
         Rat_point_2 center(point_in_faces[i][0], point_in_faces[i][1]);
         Rat_circle_2 circle(center, r1r2 * r1r2);
         Conic_curve_2 conic_arc(circle);
         insert(copy, conic_arc);
+
+        // then add rho label for arc
+        for (Arrangement_2::Edge_iterator edge = copy.edges_begin(); edge != copy.edges_end(); ++edge)
+        {
+            if (edge->data().compare("") == 0)
+            {
+                edge->set_data("rho_");
+                edge->twin()->set_data("rho_");
+            }
+        }
 
         Walk_pl walk_pl(copy);
 
@@ -682,22 +717,80 @@ arrangement::compute_ACScell()
                     } while (outer_ccb != first_outer_ccb);
 
                     ACScells.push_back(cell);
-
                 }
                 catch (const std::exception exn) {}
             }
         }
+    }
 
+    // clean ACScells
+    for (int i = 0; i < (int)ACScells.size(); ++i)
+        ACScells[i].cleanLabels();
+
+    // compute ACScells id
+    int cpt = 0;
+    int previous = 0;
+    for (int i = 0; i < (int)ACScells.size(); ++i)
+    {
+        if (previous != ACScells[i].NCR)
+        {
+            cpt = 0;
+            previous = ACScells[i].NCR;
+        }
+
+        ACScells[i].id = std::to_string(ACScells[i].NCR) + "." + std::to_string(cpt);
+        ++cpt;
     }
 
     // print results
     printACScells();
-
 }
 
 void
 arrangement::compute_GRASPcell()
 {
+    for (int i = 0; i < (int) ACScells.size(); ++i)
+        for (int j = 0; j < (int)ACScells[i].labels.size(); ++j)
+            if (ACScells[i].labels[j].compare("rho_") == 0)
+            {
+                GRASPcell g(ACScells[i].NCR);
+                // set label1
+                if (j == 0)
+                    g.label1 = ACScells[i].labels.back();
+                else
+                    g.label1 = ACScells[i].labels[j-1];
+                // set label2
+                if (j == ((int)ACScells[i].labels.size() - 1))
+                    g.label2 = ACScells[i].labels.front();
+                else
+                    g.label2 = ACScells[i].labels[j+1];
+                GRASPcells.push_back(g);
+            }
+
+    // compute GRASPcells id
+    int cpt = 0;
+    int previous = 0;
+    for (int i = 0; i < (int)GRASPcells.size(); ++i)
+    {
+        if (previous != GRASPcells[i].NCR)
+        {
+            cpt = 0;
+            previous = GRASPcells[i].NCR;
+        }
+
+        GRASPcells[i].id = std::to_string(GRASPcells[i].NCR) + "." + std::to_string(cpt);
+        ++cpt;
+    }
+
+    // Print results
+    std::cout << std::endl;
+    std::cout << "**************** GRASPcells ****************" << std::endl;
+    for (int i = 0; i < (int) GRASPcells.size(); ++i)
+    {
+        std::cout << GRASPcells[i].id << " - Labels : ";
+        std::cout << GRASPcells[i].label1 << " rho_ " << GRASPcells[i].label2 << std::endl;
+    }
+    std::cout << std::endl;
 
 }
 
@@ -721,10 +814,11 @@ arrangement::newProblem()
     //ccII.clear();
     // reset for graphs
     nonCriticalRegions.clear();
-    convolution_r_all.clear();
+    //convolution_r_all.clear();
     point_in_faces.clear();
     neighbours.clear();
     ACScells.clear();
+    GRASPcells.clear();
 
 }
 

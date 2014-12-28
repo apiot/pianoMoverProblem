@@ -32,6 +32,12 @@ MainWindow::MainWindow(QWidget *parent) :
     manipulatorRadius = 50;
     targetRadius = 60;
 
+    // arrangement
+    problem = new arrangement();
+
+    // graphs
+    graphs = new Graphs();
+
     /* ************************************************************** set Menu */
     QMenu *menuFile = menuBar()->addMenu("&File");
 
@@ -148,9 +154,6 @@ MainWindow::MainWindow(QWidget *parent) :
     hBoxLayout->addWidget(right);
     // set last parameters
     setCentralWidget(central);
-
-    // arrangement
-    problem = new arrangement();
 
     /* *********************************************** set signals and slots */
 
@@ -478,7 +481,7 @@ MainWindow::compute()
 
         statusBarRight->setText(QString::fromStdString("Paint Critical Curves"));
 
-        progressBar->setValue(70);
+        progressBar->setValue(60);
         criticalCurves->paint_env(problem->frontier);
         criticalCurves->paint_obstacles(problem->obstacles);
         //criticalCurves->paint_convolution(problem->admissible_o);
@@ -486,9 +489,9 @@ MainWindow::compute()
         //criticalCurves->paint_ccII(problem->ccII);
         criticalCurves->paint_arrangement(problem->nonCriticalRegions, Qt::red, false, Qt::black);
 
-        progressBar->setValue(80);
+        progressBar->setValue(70);
 
-        statusBarRight->setText(QString::fromStdString("Compute ACScell"));
+        statusBarRight->setText(QString::fromStdString("Compute ACScell and GRASPcell"));
 
         problem->compute_pointInCells(problem->nonCriticalRegions, problem->point_in_faces);
         problem->compute_neighbours();
@@ -496,7 +499,12 @@ MainWindow::compute()
         criticalCurves->paint_face_id(problem->point_in_faces);
 
         problem->compute_ACScell();
+        problem->compute_GRASPcell();
 
+        progressBar->setValue(90);
+        statusBarRight->setText(QString::fromStdString("Compute Graphs"));
+
+        graphs->retrieveData(problem->neighbours, problem->ACScells, problem->GRASPcells);
 
         statusBarRight->setText(QString::fromStdString("Computation Done"));
         progressBar->setVisible(false);
@@ -534,6 +542,7 @@ MainWindow::newFile()
     movie->newProblem();
     statusBarLeft->setText(QString::fromStdString("Waiting"));
     statusBarRight->setText(QString::fromStdString(""));
+    graphs->newProblem();
 }
 
 void

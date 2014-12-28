@@ -20,7 +20,7 @@
 #include <CGAL/Arrangement_with_history_2.h>
 #include <CGAL/Arr_extended_dcel.h>
 #include <CGAL/Arr_walk_along_line_point_location.h>
-
+#include <CGAL/Arr_observer.h>
 
 #include <CGAL/offset_polygon_2.h>
 #include <CGAL/Gps_traits_2.h>

@@ -4,6 +4,8 @@
 #include "sceneproblem.h"
 #include "sceneresults.h"
 #include "acscell.h"
+#include "graspcell.h"
+#include "graphs.h"
 #include "arrangement.h"
 
 
@@ -49,6 +51,7 @@ namespace Ui {
 
 class SceneProblem;
 class arrangement;
+class Graphs;
 
 class MainWindow : public QMainWindow
 {
@@ -135,6 +138,9 @@ public:
     QRadioButton *endManipulator;
     QRadioButton *addTarget;
     QRadioButton *endTarget;
+
+    // graph
+    Graphs *graphs;
 
 
 };

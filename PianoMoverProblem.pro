@@ -28,12 +28,16 @@ SOURCES += main.cpp\
     sceneproblem.cpp \
     arrangement.cpp \
     sceneresults.cpp \
-    acscell.cpp
+    acscell.cpp \
+    graspcell.cpp \
+    graphs.cpp
 
 HEADERS  += mainwindow.h \
     sceneproblem.h \
     arrangement.h \
     sceneresults.h \
-    acscell.h
+    acscell.h \
+    graspcell.h \
+    graphs.h
 
 FORMS    += mainwindow.ui
