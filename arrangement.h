@@ -25,9 +25,9 @@ public:
     void compute_pointInCells(Arrangement_2 &arr, std::vector<std::vector<double> > &points);
     void print_neighbours();
     void compute_neighbours();
-    void printACScells();
     void compute_ACScell();
     void compute_GRASPcell();
+    void compute_ACScellBeginEnd();
     void newProblem();
 
 public:
@@ -67,8 +67,15 @@ public:
     //Arrangement_2 convolution_r_all;
     std::vector<std::vector<double> > point_in_faces;
     std::vector<std::vector<int> > neighbours;
+
+    int AcscellBegin;
+    int AcscellEnd;
+
     std::vector<ACScell> ACScells;
     std::vector<GRASPcell> GRASPcells;
+    std::vector<std::vector<int> > GRASPManipCells;
+    std::vector<int> source;
+    std::vector<int> target;
 };
 
 #endif // ARRANGEMENT_H

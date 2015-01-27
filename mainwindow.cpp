@@ -406,7 +406,9 @@ MainWindow::compute()
     problem->newProblem();
     admissibleR->newProblem();
     admissibleO->newProblem();
+    criticalCurves->newProblem();
     movie->newProblem();
+    graphs->newProblem();
 
     /* in a first time we print all data we got */
     /*
@@ -499,16 +501,25 @@ MainWindow::compute()
         criticalCurves->paint_face_id(problem->point_in_faces);
 
         problem->compute_ACScell();
+        problem->compute_ACScellBeginEnd();
         problem->compute_GRASPcell();
 
         progressBar->setValue(90);
         statusBarRight->setText(QString::fromStdString("Compute Graphs"));
 
-        graphs->retrieveData(problem->neighbours, problem->ACScells, problem->GRASPcells);
+        graphs->retrieveData(problem->neighbours, problem->ACScells, problem->GRASPcells, problem->GRASPManipCells, problem->source, problem->target);
+
+        graphs->printACScells();
+        graphs->printGRASPcells();
+
+        graphs->create_motion_graph();
+        graphs->create_contact_graph();
+        graphs->create_manip_graph();
+
+        graphs->getResult();
 
         statusBarRight->setText(QString::fromStdString("Computation Done"));
         progressBar->setVisible(false);
-
 
         /*
         }

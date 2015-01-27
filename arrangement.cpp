@@ -626,22 +626,7 @@ arrangement::compute_neighbours()
                 }
 
     // print results
-    //print_neighbours();
-}
-
-void
-arrangement::printACScells()
-{
-    std::cout << std::endl;
-    std::cout << "**************** ACScells ****************" << std::endl;
-    for (int i = 0; i < (int) ACScells.size(); ++i)
-    {
-        std::cout << ACScells[i].id << " - Labels : ";
-        for (int j = 0; j < (int) ACScells[i].labels.size(); ++j)
-            std::cout << ACScells[i].labels[j] << " ";
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+    print_neighbours();
 }
 
 void
@@ -712,6 +697,10 @@ arrangement::compute_ACScell()
                     Arrangement_2::Ccb_halfedge_circulator outer_ccb = v->face()->outer_ccb();
                     do
                     {
+                        // for retrieving ACScell Begin and End
+                        insert(cell.arr, outer_ccb->curve());
+
+                        // then continue
                         cell.addLabel(outer_ccb->data());
                         ++outer_ccb;
                     } while (outer_ccb != first_outer_ccb);
@@ -741,15 +730,110 @@ arrangement::compute_ACScell()
         ACScells[i].id = std::to_string(ACScells[i].NCR) + "." + std::to_string(cpt);
         ++cpt;
     }
+}
 
-    // print results
-    printACScells();
+void
+arrangement::compute_ACScellBeginEnd()
+{
+    int ncr_begin = -1;
+    int ncr_end = -1;
+
+    Walk_pl walk_pl(nonCriticalRegions);
+
+    // get NCR start
+    Rational xt(target_centre.x());
+    Rational yt(target_centre.y());
+    Conic_point_2 pt(xt,yt);
+    Arrangement_2::Vertex_handle v = insert_point(nonCriticalRegions, pt, walk_pl);
+    try
+    {
+        ncr_begin = v->face()->data();
+        nonCriticalRegions.remove_isolated_vertex(v);
+    }
+    catch (const std::exception exn)
+    {
+        target_centre = QPoint(target_centre.x()+1, target_centre.y()+1);
+        compute_ACScellBeginEnd();
+        return;
+    }
+
+    // get NCR end
+    Rational xe(target_centre_end.x());
+    Rational ye(target_centre_end.y());
+    Conic_point_2 pe(xe,ye);
+    Arrangement_2::Vertex_handle w = insert_point(nonCriticalRegions, pe, walk_pl);
+    try
+    {
+        ncr_end = w->face()->data();
+        nonCriticalRegions.remove_isolated_vertex(w);
+    }
+    catch (const std::exception exn)
+    {
+        target_centre_end = QPoint(target_centre_end.x()+1, target_centre_end.y()+1);
+        compute_ACScellBeginEnd();
+        return;
+    }
+
+    // retrieve ACScell
+    for (int i = 0; i < (int) ACScells.size(); i++)
+    if (ACScells[i].NCR == ncr_begin)
+    {
+        Rational x(manipulator_centre.x());
+        Rational y(manipulator_centre.y());
+        Conic_point_2 p(x,y);
+        Walk_pl walk(ACScells[i].arr);
+        Arrangement_2::Vertex_handle u = insert_point(ACScells[i].arr, p, walk);
+        try
+        {
+            if (!u->face()->is_unbounded())
+            {
+                ACScells[i].arr.remove_isolated_vertex(u);
+                AcscellBegin = i;
+                break;
+            }
+        }
+        catch (const std::exception exn)
+        {
+            manipulator_centre = QPoint(manipulator_centre.x()+1, manipulator_centre.y()+1);
+            compute_ACScellBeginEnd();
+            return;
+        }
+    }
+
+    for (int i = 0; i < (int) ACScells.size(); i++)
+    if (ACScells[i].NCR == ncr_end)
+    {
+        Rational x(manipulator_centre_end.x());
+        Rational y(manipulator_centre_end.y());
+        Conic_point_2 p(x,y);
+        Walk_pl walk(ACScells[i].arr);
+        Arrangement_2::Vertex_handle u = insert_point(ACScells[i].arr, p, walk);
+        try
+        {
+            if (!u->face()->is_unbounded())
+            {
+                ACScells[i].arr.remove_isolated_vertex(u);
+                AcscellEnd = i;
+                break;
+            }
+        }
+        catch (const std::exception exn)
+        {
+            manipulator_centre_end = QPoint(manipulator_centre_end.x()+1, manipulator_centre_end.y()+1);
+            compute_ACScellBeginEnd();
+            return;
+        }
+    }
 }
 
 void
 arrangement::compute_GRASPcell()
 {
+    bool flag;
     for (int i = 0; i < (int) ACScells.size(); ++i)
+    {
+        flag = false;
+        GRASPManipCells.push_back(std::vector<int>());
         for (int j = 0; j < (int)ACScells[i].labels.size(); ++j)
             if (ACScells[i].labels[j].compare("rho_") == 0)
             {
@@ -765,7 +849,28 @@ arrangement::compute_GRASPcell()
                 else
                     g.label2 = ACScells[i].labels[j+1];
                 GRASPcells.push_back(g);
+                GRASPManipCells[GRASPManipCells.size()-1].push_back(GRASPcells.size()-1);
+                if (i == AcscellBegin)
+                    source.push_back(GRASPcells.size()-1);
+                if (i == AcscellEnd)
+                    target.push_back(GRASPcells.size()-1);
+
+                flag = true;
             }
+
+        if (!flag)
+        {
+            GRASPcell g(ACScells[i].NCR);
+            g.label1 = "joker";
+            g.label2 = "joker";
+            GRASPcells.push_back(g);
+            if (i == AcscellBegin)
+                source.push_back(GRASPcells.size()-1);
+            if (i == AcscellEnd)
+                target.push_back(GRASPcells.size()-1);
+
+        }
+    }
 
     // compute GRASPcells id
     int cpt = 0;
@@ -781,17 +886,6 @@ arrangement::compute_GRASPcell()
         GRASPcells[i].id = std::to_string(GRASPcells[i].NCR) + "." + std::to_string(cpt);
         ++cpt;
     }
-
-    // Print results
-    std::cout << std::endl;
-    std::cout << "**************** GRASPcells ****************" << std::endl;
-    for (int i = 0; i < (int) GRASPcells.size(); ++i)
-    {
-        std::cout << GRASPcells[i].id << " - Labels : ";
-        std::cout << GRASPcells[i].label1 << " rho_ " << GRASPcells[i].label2 << std::endl;
-    }
-    std::cout << std::endl;
-
 }
 
 void
@@ -819,6 +913,9 @@ arrangement::newProblem()
     neighbours.clear();
     ACScells.clear();
     GRASPcells.clear();
+    GRASPManipCells.clear();
+    source.clear();
+    target.clear();
 
 }
 

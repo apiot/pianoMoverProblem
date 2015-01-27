@@ -14,14 +14,13 @@ public:
     ACScell(int region);
     void addLabel(std::string label);
     void setRegion(int region);
-    bool compareLabels(ACScell cell);
+    bool compareLabels(ACScell &cell);
     void cleanLabels();
 public:
     std::vector<std::string> labels;
-    /* NCR = Non Critical Region (cell built with critical curves in object convolution */
-    int NCR;
+    int NCR; // non critical region
     std::string id;
-    Arrangement_2 arr; // not used for the moment
+    Arrangement_2 arr;
 
     // for graph
     int distance;
