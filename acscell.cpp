@@ -18,7 +18,7 @@ ACScell::addLabel(std::string label)
 void
 ACScell::setRegion(int region)
 {
-    NCR = region;
+    NCR = region; //not used
 }
 
 bool
