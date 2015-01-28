@@ -178,7 +178,7 @@ Graphs::resetVertices()
     {
         ACScells[i].distance = 0;
         ACScells[i].father = -1;
-        ACScells[i].mark = 0; // 0 : not visited ; 1 : visited ; 2 : terminated
+        ACScells[i].mark = 0; // 0 : not visited ; 1 : visited
     }
     for (int i = 0; i < (int) GRASPcells.size(); ++i)
     {
@@ -197,7 +197,7 @@ Graphs::breadthFirstSearch(std::vector<T> &items, std::vector<std::vector<int> >
 
     std::list<int> file;
     int current = source;
-    items[current].mark = 2;
+    items[current].mark = 1;
     file.push_back(current);
     while (!file.empty())
     {
@@ -276,6 +276,21 @@ Graphs::getResult()
     else
     {
         std::cout << "************ THERE IS NO SOLUTION *************" << std::endl;
+    }
+
+
+    std::cout << std::endl << "************ Liaison edges *************" << std::endl;
+    for (int i = 0; i < (int) GRASPManipCells.size(); ++i)
+    {
+        if ((int) GRASPManipCells[i].size() > 1)
+        {
+            for (int j = 0; j < (int) GRASPManipCells[i].size(); ++j)
+            {
+                std::cout << " " << GRASPManipCells[i][j];
+            }
+            std::cout << std::endl;
+        }
+
     }
 
     return result;
